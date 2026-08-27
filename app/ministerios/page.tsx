@@ -1,0 +1,7 @@
+import type { Metadata } from "next";
+import { PageHero } from "../../components/PageHero";
+import { SiteShell } from "../../components/SiteShell";
+
+export const metadata: Metadata = { title: "Ministérios" };
+const ministries = ["Infantil", "Jovens", "Mulheres", "Homens", "Casais", "Louvor", "Mídia", "Intercessão", "Recepção", "Células", "Ação Social"];
+export default function MinisteriosPage() { return <SiteShell><PageHero eyebrow="Servir transforma" title="Encontre seu lugar para servir" description="Conheça as áreas da comunidade e manifeste seu interesse em usar seus dons para servir pessoas."/><section className="content-section"><div className="container-shell"><p className="mb-8 max-w-3xl text-sm leading-7 text-zinc-500">As áreas abaixo são exemplos solicitados. Fotos, líderes, descrições e programação ainda precisam ser confirmados no painel.</p><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{ministries.map(item => <article key={item} className="panel p-6"><span className="text-[.65rem] font-bold uppercase tracking-wider text-zinc-400">Cadastro pendente</span><h2 className="mt-16 text-2xl font-bold">{item}</h2><p className="mt-3 text-sm leading-7 text-zinc-500">Descrição, liderança e programação a confirmar.</p><a href={`/contato?assunto=${encodeURIComponent(`Quero servir no ministério ${item}`)}`} className="btn-secondary mt-6">Quero servir</a></article>)}</div></div></section></SiteShell>; }

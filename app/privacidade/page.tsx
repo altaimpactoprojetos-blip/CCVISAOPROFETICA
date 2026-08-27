@@ -1,0 +1,5 @@
+import type { Metadata } from "next";
+import { PageHero } from "../../components/PageHero";
+import { SiteShell } from "../../components/SiteShell";
+export const metadata: Metadata = { title: "Política de Privacidade" };
+export default function PrivacidadePage() { return <SiteShell><PageHero eyebrow="Proteção de dados" title="Política de Privacidade" description="Como os dados pessoais são tratados neste portal."/><section className="content-section"><article className="container-shell max-w-3xl space-y-7 text-sm leading-8 text-zinc-600"><p>Os dados enviados pelos formulários são utilizados somente para o atendimento solicitado, acompanhamento pastoral, inscrições e comunicação relacionada às atividades da Comunidade Cristã Visão Profética.</p><p>Pedidos de oração não são publicados. O acesso administrativo é restrito e as informações pessoais devem ser tratadas conforme a Lei Geral de Proteção de Dados (LGPD).</p><p>O texto jurídico definitivo, o contato do responsável e os prazos internos de retenção deverão ser validados pela administração antes da abertura pública do portal.</p></article></section></SiteShell>; }

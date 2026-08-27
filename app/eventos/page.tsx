@@ -1,0 +1,7 @@
+import type { Metadata } from "next";
+import { PageHero } from "../../components/PageHero";
+import { PlaceholderNotice } from "../../components/PlaceholderNotice";
+import { SiteShell } from "../../components/SiteShell";
+
+export const metadata: Metadata = { title: "Eventos" };
+export default function EventosPage() { return <SiteShell><PageHero eyebrow="Agenda da comunidade" title="Próximos eventos" description="Acompanhe encontros, conferências e momentos especiais da Comunidade Cristã Visão Profética."/><section className="content-section"><div className="container-shell"><PlaceholderNotice>Nenhum evento oficial foi confirmado ainda. Quando houver uma nova programação, você encontrará aqui a data, o horário, o local e a inscrição.</PlaceholderNotice><div className="mt-10 grid gap-0 border-y border-zinc-300 md:grid-cols-2"><article className="min-h-80 border-b border-zinc-300 p-8 md:border-b-0 md:border-r"><p className="eyebrow mt-24 text-zinc-400">Agenda em atualização</p><h2 className="mt-3 text-3xl font-semibold">Novo evento</h2><p className="mt-3 text-sm leading-7 text-zinc-500">Os próximos encontros serão publicados assim que as informações forem confirmadas.</p></article><article className="grid min-h-80 place-items-center p-8 text-center"><div><p className="text-lg font-semibold">Inscrição simples e rápida</p><p className="mt-3 max-w-sm text-sm leading-7 text-zinc-500">Quando um evento abrir inscrições, você poderá reservar sua vaga diretamente por aqui.</p></div></article></div></div></section></SiteShell>; }
