@@ -12,8 +12,10 @@ export type Field = {
   full?: boolean;
 };
 
-export function SubmissionForm({ kind, fields, buttonLabel, successMessage, intro }: { kind: string; fields: Field[]; buttonLabel: string; successMessage: string; intro?: ReactNode }) {
+export function SubmissionForm({ kind, fields, buttonLabel, successMessage, intro, eventId }: { kind: string; fields: Field[]; buttonLabel: string; successMessage: string; intro?: ReactNode; eventId?: number }) {
   const [state, setState] = useState<"idle" | "sending" | "success" | "error">("idle");
+
+  const [errorMessage, setErrorMessage] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -21,15 +23,18 @@ export function SubmissionForm({ kind, fields, buttonLabel, successMessage, intr
     const form = event.currentTarget;
     const data = new FormData(form);
     const payload = Object.fromEntries(data.entries());
-    const response = await fetch("/api/submissions", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ kind, payload }),
-    });
-    if (response.ok) {
+    try {
+      const response = await fetch("/api/submissions", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind, payload, eventId }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Não foi possível enviar agora.");
       form.reset();
       setState("success");
-    } else {
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Confira sua conexão e tente novamente.");
       setState("error");
     }
   }
@@ -43,7 +48,7 @@ export function SubmissionForm({ kind, fields, buttonLabel, successMessage, intr
   }
 
   return (
-    <form onSubmit={submit} className="panel p-6 sm:p-8">
+    <form onSubmit={submit} className="panel submission-form">
       {intro && <div className="mb-7 text-sm leading-7 text-zinc-600">{intro}</div>}
       <div className="grid gap-5 sm:grid-cols-2">
         {fields.map((field) => (
@@ -68,7 +73,7 @@ export function SubmissionForm({ kind, fields, buttonLabel, successMessage, intr
         <button disabled={state === "sending"} className="btn-primary disabled:cursor-wait disabled:opacity-60">{state === "sending" ? "Enviando..." : buttonLabel}</button>
         <p className="text-xs leading-5 text-zinc-500">Seus dados serão usados somente para o atendimento solicitado, conforme a LGPD.</p>
       </div>
-      {state === "error" && <p className="mt-4 text-sm font-semibold text-red-700" role="alert">Não foi possível enviar agora. Tente novamente em instantes.</p>}
+      {state === "error" && <p className="mt-4 text-sm font-semibold text-red-700" role="alert">{errorMessage}</p>}
     </form>
   );
 }

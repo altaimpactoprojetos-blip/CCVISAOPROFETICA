@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { CloseIcon, MenuIcon } from "./icons";
 
 const nav = [
@@ -18,44 +19,52 @@ const nav = [
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const isActive = (href: string) => href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-black text-white">
-      <div className="container-shell flex min-h-20 items-center justify-between gap-5">
-        <Link href="/" className="flex items-center" aria-label="Início - CC Visão Profética">
-          <img src="/logo-oficial.webp" alt="Logo oficial da Comunidade Cristã Visão Profética" className="h-16 w-16 object-contain" />
+    <header className="site-header">
+      <div className="container-shell header-inner">
+        <Link href="/" className="brand-link" aria-label="Início - Comunidade Cristã Visão Profética">
+          <img src="/logo-symbol.svg" alt="" aria-hidden="true" className="brand-symbol" />
+          <span className="brand-name">
+            <span>COMUNIDADE CRISTÃ</span>
+            <strong>VISÃO PROFÉTICA</strong>
+          </span>
         </Link>
 
-        <nav className="hidden items-center gap-5 xl:flex" aria-label="Navegação principal">
+        <nav className="desktop-nav" aria-label="Navegação principal">
           {nav.map(([label, href]) => (
-            <Link key={href} href={href} className="text-[.78rem] font-medium text-zinc-300 transition hover:text-white">
+            <Link key={href} href={href} className="nav-link" aria-current={isActive(href) ? "page" : undefined}>
               {label}
             </Link>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 sm:flex">
-          <Link href="/area-do-aluno" className="rounded-sm border border-white/30 px-4 py-3 text-[.72rem] font-semibold hover:bg-white hover:text-black">
+        <div className="header-actions">
+          <Link href="/area-do-aluno" className="student-link" aria-current={isActive("/area-do-aluno") ? "page" : undefined}>
             Área do aluno
           </Link>
+          <button type="button" className="menu-toggle" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="mobile-navigation" aria-label={open ? "Fechar menu" : "Abrir menu"}>
+            {open ? <CloseIcon className="h-5 w-5"/> : <MenuIcon className="h-5 w-5"/>}
+          </button>
         </div>
-
-        <button className="grid h-11 w-11 place-items-center rounded-sm border border-white/30 xl:hidden" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={open ? "Fechar menu" : "Abrir menu"}>
-          {open ? <CloseIcon className="h-5 w-5"/> : <MenuIcon className="h-5 w-5"/>}
-        </button>
       </div>
 
       {open && (
-        <div className="border-t border-white/10 bg-black px-5 pb-6 xl:hidden">
-          <nav className="container-shell grid py-3" aria-label="Navegação mobile">
+        <div id="mobile-navigation" className="mobile-menu" onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setOpen(false);
+            event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(".menu-toggle")?.focus();
+          }
+        }}>
+          <nav className="container-shell" aria-label="Navegação mobile">
             {nav.map(([label, href]) => (
-              <Link key={href} href={href} onClick={() => setOpen(false)} className="border-b border-white/10 py-3 text-sm font-semibold">
+              <Link key={href} href={href} onClick={() => setOpen(false)} className="mobile-link" aria-current={isActive(href) ? "page" : undefined}>
                 {label}
               </Link>
             ))}
-            <div className="mt-5 grid gap-2 sm:hidden">
-              <Link href="/area-do-aluno" onClick={() => setOpen(false)} className="rounded-sm border border-white/30 px-5 py-4 text-center text-xs font-semibold">Área do aluno</Link>
-            </div>
+            <Link href="/area-do-aluno" onClick={() => setOpen(false)} className="student-link mobile-student-link">Área do aluno</Link>
           </nav>
         </div>
       )}

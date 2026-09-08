@@ -14,10 +14,10 @@ const quickLinks = [
 export default function Home() {
   return (
     <SiteShell>
-      <section className="relative min-h-[76vh] overflow-hidden bg-black text-white">
-        <img src={heroImage} alt="Pessoas reunidas em um momento de adoração" className="absolute inset-0 h-full w-full object-cover opacity-55" />
+      <section className="home-hero relative overflow-hidden bg-black text-white">
+        <img src={heroImage} alt="Pessoas reunidas em um momento de adoração" fetchPriority="high" className="home-hero-image absolute inset-0 h-full w-full object-cover opacity-55" />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,.88)_0%,rgba(0,0,0,.48)_58%,rgba(0,0,0,.3)_100%)]" />
-        <div className="container-shell relative flex min-h-[76vh] items-end py-14 sm:items-center sm:py-20">
+        <div className="container-shell home-hero-inner relative flex items-center">
           <div className="max-w-4xl">
             <p className="eyebrow text-zinc-300">Comunidade Cristã Visão Profética</p>
             <h1 className="display-title mt-5 max-w-3xl">Uma igreja para chamar de casa.</h1>
@@ -30,10 +30,9 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <p className="absolute bottom-4 right-5 text-[.65rem] text-white/55">Imagem de ambientação; fotos da igreja serão adicionadas em breve.</p>
       </section>
 
-      <section className="border-b border-zinc-200 bg-white py-16">
+      <section className="quick-links-section border-b border-zinc-200 bg-white">
         <div className="container-shell grid gap-10 lg:grid-cols-[.65fr_1.35fr] lg:gap-20">
           <div>
             <p className="eyebrow text-zinc-500">Encontre seu caminho</p>
@@ -41,7 +40,7 @@ export default function Home() {
           </div>
           <div className="border-t border-zinc-300">
             {quickLinks.map((item, index) => {
-              return <Link key={item.title} href={item.href} className="group grid grid-cols-[36px_1fr_auto] items-center gap-4 border-b border-zinc-300 py-5">
+              return <Link key={item.title} href={item.href} className="quick-link group grid grid-cols-[36px_1fr_auto] items-center gap-4 border-b border-zinc-300 py-5">
                 <span className="text-xs text-zinc-400">0{index + 1}</span>
                 <span><strong className="block text-base font-semibold">{item.title}</strong><span className="mt-1 block text-sm text-zinc-500">{item.text}</span></span>
                 <ArrowIcon className="h-5 w-5 transition group-hover:translate-x-1"/>
@@ -62,7 +61,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-black py-20 text-white">
+      <section className="next-steps py-20 text-white">
         <div className="container-shell">
           <div className="grid gap-8 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
             <div><p className="eyebrow text-zinc-500">Seu próximo passo</p><h2 className="section-title mt-5">Chegue como você está.</h2></div>
@@ -74,7 +73,7 @@ export default function Home() {
               ["02", "Conecte-se a uma célula", "Conte seu bairro e nossa equipe ajuda você a encontrar um grupo.", "/celulas"],
               ["03", "Encontre onde servir", "Conheça os ministérios e descubra onde seus dons podem ajudar.", "/ministerios"],
             ].map(([number, title, copy, href]) => (
-              <Link key={number} href={href} className="group grid gap-4 border-b border-white/25 py-7 sm:grid-cols-[48px_1fr_1fr_auto] sm:items-center">
+              <Link key={number} href={href} className="next-step group grid gap-4 border-b border-white/25 py-7 sm:grid-cols-[48px_1fr_1fr_auto] sm:items-center">
                 <span className="text-xs text-zinc-600">{number}</span><h3 className="text-xl font-semibold">{title}</h3><p className="text-sm leading-7 text-zinc-500">{copy}</p><ArrowIcon className="h-5 w-5 transition group-hover:translate-x-1"/>
               </Link>
             ))}
@@ -83,7 +82,21 @@ export default function Home() {
       </section>
 
       <section className="content-section bg-white">
-        <div className="container-shell grid gap-10 border-y border-zinc-300 py-14 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="container-shell generosity-panel grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-end">
+          <div>
+            <p className="eyebrow text-zinc-500">Generosidade</p>
+            <h2 className="section-title mt-4 max-w-3xl">Exerça sua generosidade.</h2>
+          </div>
+          <div className="lg:justify-self-end">
+            <p className="text-sm font-semibold uppercase tracking-[.08em] text-zinc-500">Chave PIX — CNPJ</p>
+            <p className="mt-3 break-all text-2xl font-semibold tracking-[-.02em] sm:text-3xl">65128666000175</p>
+            <p className="mt-4 text-sm text-zinc-500">Comunidade Cristã Visão Profética</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="content-section">
+        <div className="container-shell contact-panel grid gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
           <div><p className="eyebrow text-zinc-500">Vamos conversar?</p><h2 className="section-title mt-4 max-w-3xl">Queremos conhecer você.</h2><p className="body-copy mt-5 max-w-2xl">Se esta é sua primeira visita ou se você quer fazer parte da comunidade, deixe uma mensagem. Alguém da nossa equipe vai falar com você.</p></div>
           <Link href="/fazer-parte" className="btn-primary">Falar com a equipe <ArrowIcon className="h-4 w-4"/></Link>
         </div>

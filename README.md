@@ -1,107 +1,86 @@
-# vinext-starter
+# CC Visão Profética
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+Site da Comunidade Cristã Visão Profética, com páginas públicas, formulários e painel administrativo.
 
-## Prerequisites
+## Administração
 
-- Node.js `>=22.13.0`
-- Linux with `flock`, `curl`, and GNU `timeout`
+O link **Administração**, no rodapé, abre `/admin`.
 
-## Sites Lifecycle
+- Login próprio por e-mail e senha, independente do ChatGPT e do Google.
+- Eventos: nome, descrição, data, horário, local, arte, vagas e abertura de inscrições.
+- Publicação: salvar em rascunho ou publicar; desmarcar a publicação retira o conteúdo público.
+- Inscrições e contatos: contagens, filtro por assunto e evento, busca, paginação e situação do atendimento.
+- Galeria: álbuns por categoria e data, envio de até 20 fotos por lote e remoção de fotos do álbum.
+- Programação e contato: editar horários, endereço, WhatsApp, e-mail e redes sociais.
+- Troca de senha encerra as sessões abertas.
 
-The Sites lifecycle CLI runs the locked dependency install before returning this checkout. Edit the source under `app/`, then checkpoint when a coherent milestone is ready to inspect or share. The remote Sites builder runs `npm run build` against the pushed commit. Do not repeat install or build as a normal pre-checkpoint step.
+A primeira ativação ocorre em `/admin/ativar#token=TOKEN_PRIVADO`. O responsável recebe o link separadamente e define as próprias credenciais nessa tela. Não há senha padrão. O token não entra na URL enviada ao servidor; o fragmento é removido do navegador após a leitura. A criação é atômica e só funciona quando ainda não há administrador.
 
-This starter does not use `wrangler.jsonc`.
+O painel de ativação não possui cadastro público. Para recuperar um acesso perdido, o proprietário deve solicitar suporte ao mantenedor; não há envio automático de e-mails de recuperação configurado.
 
-`install:ci` is intentionally a single, non-retrying `npm ci`. It refuses a concurrent install for the same project, consumes a matching image-seeded npm cache with `--prefer-offline` while retaining registry fallback for a missing cache object, otherwise downloads and verifies the complete vinext tarball recorded in `package-lock.json`, limits npm to one socket, and terminates a stalled install. `build` applies a short timeout. These helpers target Linux and use GNU `timeout`; they are not native macOS scripts.
+### Variáveis de ambiente
 
-Scripts that need writable project-scoped home, npm, XDG, and temporary paths use `scripts/sites-env.sh`. The `dev` and `start` scripts honor the caller's runtime environment and keep Wrangler logs inside the checkout. The generated `.sites-runtime/` directory is disposable and ignored by Git.
+Configure no ambiente de hospedagem, nunca no Git:
 
-## Included Shape
+| Variável | Uso |
+| --- | --- |
+| `SUPABASE_URL` | URL do projeto Supabase `https://...supabase.co`. |
+| `SUPABASE_SECRET_KEY` | Chave secreta do servidor, usada somente pelas rotas do Worker. Nunca publique no navegador ou no Git. |
+| `SUPABASE_STORAGE_BUCKET` | Nome opcional do bucket privado de imagens; o padrão é `cc-visao-profetica-media`. |
+| `ADMIN_SETUP_TOKEN_HASH` | SHA-256 hexadecimal de um token aleatório de 32 bytes, entregue em hexadecimal ao proprietário. |
+| `ADMIN_SETUP_EXPIRES_AT` | Prazo da ativação em milissegundos Unix. |
 
-- edit site code under `app/`
-- `app/chatgpt-auth.ts` provides optional dispatch-owned ChatGPT sign-in helpers
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/index.ts` reads the D1 binding from the Cloudflare Worker environment
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+Depois de ativado, o token deixa de servir para criar outra conta. As variáveis podem ser removidas. Um novo link só deve ser emitido pelo mantenedor após verificar a identidade do proprietário.
 
-## Workspace Auth Headers
+Senhas usam scrypt (`N=16384`, `r=8`, `p=5`) com salt individual. Apenas hashes são armazenados. Sessões duram até oito horas e usam cookies `HttpOnly`, `Secure`, `SameSite=Strict`; o banco guarda apenas o hash do token de sessão. Todos os endpoints privados validam sessão no servidor, e as gravações verificam a origem. O login limita tentativas por conta e origem de rede.
 
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
+O perfil scrypt segue a alternativa de 16 MiB da [orientação OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#scrypt) e foi testado no runtime Workers usado pelo projeto.
 
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
+## Eventos e inscrições
 
-Treat the full name as optional and fall back to email when it is absent:
+`/eventos` lista somente eventos publicados. `/eventos/[id]` exibe os detalhes e o formulário quando houver inscrições abertas e vagas. A reserva da vaga e a gravação ocorrem em uma única instrução SQL para evitar excesso de inscrições simultâneas. O mesmo e-mail não pode manter duas inscrições ativas no mesmo evento. Cancelar libera a vaga; reativar exige disponibilidade.
 
-```tsx
-import { headers } from "next/headers";
+Os formulários anteriores continuam na tabela `submissions`. Inscrições antigas sem vínculo explícito com evento ficam disponíveis pelos filtros de assunto e busca; o projeto não inventa vínculos retroativos. A reserva de vagas usa uma função transacional do Postgres para manter a mesma proteção contra concorrência.
 
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
+## Fotos
 
-  const displayName = fullName ?? email;
-  // ...
-}
+Use JPG, PNG ou WebP de até 8 MB. A arte do evento pode ter 1600 × 900 px. Os bytes são armazenados no bucket privado do Supabase Storage e os metadados no Postgres. A assinatura do arquivo é validada; SVG não é aceito em uploads. Fotos e capas de rascunhos só podem ser visualizadas por administradores. Retirar a publicação também impede novos acessos públicos ao arquivo. Remover uma foto do álbum retira sua referência; o objeto original não é apagado automaticamente do armazenamento.
+
+## Arquitetura e armazenamento
+
+- React, Vinext e Vite, com Worker em `worker/index.ts`.
+- Banco Supabase Postgres, acessado somente no servidor com `@supabase/supabase-js`.
+- Imagens Supabase Storage em bucket privado.
+- Esquema legado em `db/schema.ts` e `drizzle/` preservado para auditoria; migrações atuais em `supabase/migrations/`.
+- Manifesto de identidade e bindings em `.openai/hosting.json`.
+- APIs administrativas em `app/api/admin/`; controles públicos em `app/api/submissions/` e `app/api/media/`.
+
+O login da Área do Aluno permanece o existente; o login próprio desta versão se aplica à administração. A conexão com Supabase é feita no servidor; nenhuma chave secreta é embutida no navegador.
+
+O endereço atual e a estrutura visual do site continuam no mesmo projeto e domínio enquanto a camada de dados é validada. O Supabase não substitui automaticamente a hospedagem do Worker; trocar também a hospedagem exigiria uma etapa separada. O repositório guarda o código, imagens estáticas e migrações. Inscrições reais, credenciais e fotos enviadas pelo painel ficam no Supabase e exigem backup de dados separado.
+
+## Desenvolvimento e validação
+
+Use Node.js 22.13 ou superior e o lockfile existente.
+
+```bash
+npm run install:ci
+npm run build
+npm test
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+Os testes de integração locais históricos usam D1 e R2 isolados via Miniflare, sem consultar ou modificar dados reais. A migração do código usa as mesmas regras e deve ser validada com um projeto Supabase de teste antes de remover o ambiente antigo.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+Para conferir apenas o código TypeScript:
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+```bash
+npx tsc --noEmit --incremental false
+```
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+Para alterar o esquema:
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+```bash
+npm run db:generate
+```
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Diagnostic Commands
-
-- `npm run install:ci`: perform the one bounded lockfile install
-- `npm run dev`: start the Vite/Vinext development server
-- `npm run build`: build the deployable Sites artifact
-- `npm run start`: start the built Vinext application
-- `npm test`: build and verify the rendered development-preview metadata
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-Use build commands for targeted diagnosis after a remote failure, not as part of the normal checkpoint path.
-
-The timeout defaults can be overridden for a controlled canary with `SITES_INSTALL_TIMEOUT`, `SITES_INSTALL_KILL_AFTER`, `SITES_BUILD_TIMEOUT`, and `SITES_BUILD_KILL_AFTER`. A timeout fails the command; the helpers never retry an unchanged install or build.
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+Inspecione a nova migração antes da publicação. Não altere migrações já aplicadas. O projeto Supabase já contém a migração do esquema e dos dados existentes; novas alterações devem ser adicionadas como migrações incrementais. Alterar o Git não atualiza automaticamente o endereço hospedado no Sites.

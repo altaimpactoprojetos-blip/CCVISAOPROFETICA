@@ -5,8 +5,8 @@ export const userRoles = sqliteTable("user_roles", {
   id: integer("id").primaryKey({ autoIncrement: true }), email: text("email").notNull().unique(), role: text("role").notNull().default("member"), displayName: text("display_name"), createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 export const submissions = sqliteTable("submissions", {
-  id: integer("id").primaryKey({ autoIncrement: true }), kind: text("kind").notNull(), payload: text("payload").notNull(), status: text("status").notNull().default("novo"), ownerEmail: text("owner_email"), createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-});
+  id: integer("id").primaryKey({ autoIncrement: true }), kind: text("kind").notNull(), payload: text("payload").notNull(), status: text("status").notNull().default("novo"), ownerEmail: text("owner_email"), eventId: integer("event_id").references(() => events.id), registrantEmail: text("registrant_email"), createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, table => [uniqueIndex("submission_event_email_idx").on(table.eventId, table.registrantEmail).where(sql`event_id IS NOT NULL AND status != 'cancelado'`)]);
 export const contentItems = sqliteTable("content_items", {
   id: integer("id").primaryKey({ autoIncrement: true }), section: text("section").notNull(), key: text("key").notNull(), value: text("value").notNull().default(""), updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, table => [uniqueIndex("content_section_key_idx").on(table.section, table.key)]);
@@ -29,14 +29,27 @@ export const courseProgress = sqliteTable("course_progress", {
   id: integer("id").primaryKey({ autoIncrement: true }), email: text("email").notNull(), courseId: integer("course_id").notNull().references(() => courses.id), lessonId: integer("lesson_id").notNull().references(() => lessons.id), completedAt: text("completed_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, table => [uniqueIndex("progress_user_lesson_idx").on(table.email, table.lessonId)]);
 export const events = sqliteTable("events", {
-  id: integer("id").primaryKey({ autoIncrement: true }), name: text("name").notNull(), description: text("description").notNull().default(""), eventDate: text("event_date").notNull(), time: text("time").notNull(), location: text("location").notNull(), capacity: integer("capacity"), registrationStatus: text("registration_status").notNull().default("closed"), published: integer("published", { mode: "boolean" }).notNull().default(false),
+  id: integer("id").primaryKey({ autoIncrement: true }), name: text("name").notNull(), description: text("description").notNull().default(""), eventDate: text("event_date").notNull(), time: text("time").notNull(), location: text("location").notNull(), imageUrl: text("image_url"), capacity: integer("capacity"), registrationStatus: text("registration_status").notNull().default("closed"), published: integer("published", { mode: "boolean" }).notNull().default(false),
 });
 export const ministries = sqliteTable("ministries", {
   id: integer("id").primaryKey({ autoIncrement: true }), name: text("name").notNull(), description: text("description").notNull().default(""), leader: text("leader"), schedule: text("schedule"), imageUrl: text("image_url"), published: integer("published", { mode: "boolean" }).notNull().default(false),
 });
 export const galleries = sqliteTable("galleries", {
-  id: integer("id").primaryKey({ autoIncrement: true }), name: text("name").notNull(), category: text("category").notNull(), published: integer("published", { mode: "boolean" }).notNull().default(false),
+  id: integer("id").primaryKey({ autoIncrement: true }), name: text("name").notNull(), category: text("category").notNull(), eventDate: text("event_date"), published: integer("published", { mode: "boolean" }).notNull().default(false),
 });
 export const galleryPhotos = sqliteTable("gallery_photos", {
   id: integer("id").primaryKey({ autoIncrement: true }), galleryId: integer("gallery_id").notNull().references(() => galleries.id), imageUrl: text("image_url").notNull(), altText: text("alt_text").notNull().default(""), position: integer("position").notNull().default(0),
+});
+
+export const mediaAssets = sqliteTable("media_assets", {
+  key: text("key").primaryKey(), contentType: text("content_type").notNull(), size: integer("size").notNull(), createdBy: text("created_by").notNull(), createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+export const adminCredentials = sqliteTable("admin_credentials", {
+  id: integer("id").primaryKey(), email: text("email").notNull().unique(), passwordHash: text("password_hash").notNull(), createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+export const adminSessions = sqliteTable("admin_sessions", {
+  tokenHash: text("token_hash").primaryKey(), adminId: integer("admin_id").notNull().references(() => adminCredentials.id), expiresAt: integer("expires_at").notNull(),
+});
+export const adminLoginAttempts = sqliteTable("admin_login_attempts", {
+  key: text("key").primaryKey(), attempts: integer("attempts").notNull(), resetAt: integer("reset_at").notNull(),
 });

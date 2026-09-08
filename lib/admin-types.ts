@@ -1,0 +1,9 @@
+export type EventRecord = {id: number; name: string; description: string; event_date: string; time: string; location: string; capacity: number | null; registration_status: string; published: boolean; image_url: string | null; registrations: number};
+export type GalleryRecord = {id: number; name: string; category: string; event_date: string | null; published: boolean; photos: number};
+export type PhotoRecord = {id: number; image_url: string; alt_text: string};
+export type SubmissionRecord = {id: number; kind: string; payload: string; status: string; event_name: string | null; created_at: string};
+export type Schedule = {name: string; day: string; time: string}[];
+export type Contact = {address: string; whatsapp: string; email: string; instagram: string; youtube: string};
+export type AdminData = {stats: {submissions: number; new_submissions: number; published_events: number; photos: number}; events: EventRecord[]; galleries: GalleryRecord[]; kinds: {kind: string; total: number}[]; content: {schedule: Schedule; contact: Contact}};
+export const kindLabels: Record<string,string> = {fazer_parte: "Quero fazer parte", celula: "Células", batismo: "Batismo", oracao: "Pedidos de oração", contato: "Contato", evento: "Eventos", ministerio: "Ministérios"};
+export const statusLabels: Record<string,string> = {novo: "Novo", em_contato: "Em contato", confirmado: "Confirmado", cancelado: "Cancelado"};

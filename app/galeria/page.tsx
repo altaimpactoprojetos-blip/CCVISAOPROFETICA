@@ -1,12 +1,14 @@
-import type { Metadata } from "next";
-import { PageHero } from "../../components/PageHero";
-import { PlaceholderNotice } from "../../components/PlaceholderNotice";
-import { SiteShell } from "../../components/SiteShell";
-
-export const metadata: Metadata = { title: "Galeria" };
-const photos = [
-  "https://images.unsplash.com/photo-1748180446698-6b0c5af79bd7?auto=format&fit=crop&fm=jpg&q=80&w=1200",
-  "https://images.unsplash.com/photo-1642654877094-e8db202268de?auto=format&fit=crop&fm=jpg&q=80&w=1200",
-  "https://images.unsplash.com/photo-1776091104217-02e3732a4a81?auto=format&fit=crop&fm=jpg&q=80&w=1200",
-];
-export default function GaleriaPage() { return <SiteShell><PageHero eyebrow="Nossa comunidade" title="Vivendo momentos juntos" description="Álbuns de cultos, células, batismos, conferências, eventos, jovens, crianças e projetos."/><section className="content-section"><div className="container-shell"><PlaceholderNotice>Estas fotografias são apenas uma ambientação temporária. Em breve este espaço receberá os registros oficiais da CC Visão Profética.</PlaceholderNotice><div className="mt-10 grid gap-3 md:grid-cols-12">{photos.map((src, index) => <figure key={src} className={`${index === 0 ? "md:col-span-7" : index === 1 ? "md:col-span-5" : "md:col-span-12"} group relative overflow-hidden bg-zinc-300`}><img src={src} alt="Imagem provisória de um momento de adoração" className={`w-full object-cover transition duration-500 group-hover:scale-[1.02] ${index === 2 ? "h-96" : "h-[30rem]"}`}/><figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-6 pt-20 text-white"><p className="eyebrow text-zinc-300">Galeria em preparação</p><p className="mt-2 text-xl font-semibold">Registros da igreja serão adicionados aqui</p></figcaption></figure>)}</div></div></section></SiteShell>; }
+import type {Metadata} from "next";
+import {PageHero} from "../../components/PageHero";
+import {SiteShell} from "../../components/SiteShell";
+import {formatDate} from "../../lib/content";
+import type {GalleryRecord,PhotoRecord} from "../../lib/admin-types";
+import {galleriesWithPhotos} from "../../lib/site-data";
+export const dynamic="force-dynamic";
+export const metadata:Metadata={title:"Galeria"};
+export default async function GaleriaPage(){
+  let albums:GalleryRecord[]=[],photos:(PhotoRecord&{gallery_id:number})[]=[],failed=false;
+  try {const result=await galleriesWithPhotos(true);albums=result.albums;photos=result.photos;}
+  catch(error){console.error("Gallery unavailable",error);failed=true;}
+  return <SiteShell><PageHero eyebrow="Nossa comunidade" title="Vivendo momentos juntos" description="Álbuns de cultos, células, batismos, conferências, eventos, jovens, crianças e projetos."/><section className="content-section"><div className="container-shell">{failed?<div className="panel p-8" role="status"><h2 className="text-xl font-bold">Galeria temporariamente indisponível</h2><p className="body-copy mt-3">Tente novamente em instantes para ver os registros da igreja.</p></div>:!albums.length?<div className="panel p-8"><h2 className="text-2xl font-bold">Registros da nossa comunidade</h2><p className="body-copy mt-4">As fotos oficiais dos cultos e eventos serão publicadas aqui.</p></div>:albums.map(album=><section key={album.id} className="gallery-album"><p className="eyebrow text-zinc-600">{album.category}{album.event_date?` · ${formatDate(album.event_date)}`:""}</p><h2 className="mt-3 text-3xl font-bold">{album.name}</h2><div className="gallery-images">{photos.filter(photo=>photo.gallery_id===album.id).map(photo=><figure key={photo.id}><a href={photo.image_url} target="_blank" rel="noopener noreferrer" aria-label={`Ampliar: ${photo.alt_text || album.name}`}><img src={photo.image_url} alt={photo.alt_text || album.name} loading="lazy"/></a>{photo.alt_text&&<figcaption>{photo.alt_text}</figcaption>}</figure>)}</div>{!photos.some(photo=>photo.gallery_id===album.id)&&<p className="body-copy mt-4">As fotos deste álbum estarão disponíveis em breve.</p>}</section>)}</div></section></SiteShell>;
+}
