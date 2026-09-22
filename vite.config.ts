@@ -12,6 +12,9 @@ const localBindingConfig = {
   r2_buckets: [],
   // Used by the /_vinext/image optimizer in worker/index.ts.
   images: { binding: "IMAGES" },
+  // Public, non-secret settings. Secrets (SUPABASE_SECRET_KEY, ...) live in the
+  // Cloudflare dashboard as encrypted secrets and survive every deploy.
+  vars: { SUPABASE_URL: "https://zmfjohzswcvayguyajpd.supabase.co" },
 };
 
 export default defineConfig(async () => {
