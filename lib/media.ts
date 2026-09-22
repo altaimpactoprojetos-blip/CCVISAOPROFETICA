@@ -1,8 +1,7 @@
-import { env } from "cloudflare:workers";
 import { database } from "./database";
 export type StoredObject = {body: ReadableStream<Uint8Array>; httpMetadata?: {contentType?: string}};
 const defaultBucket = "cc-visao-profetica-media";
-export function mediaBucketName() { return String(env.SUPABASE_STORAGE_BUCKET ?? defaultBucket).trim() || defaultBucket; }
+export function mediaBucketName() { return String(process.env.SUPABASE_STORAGE_BUCKET ?? defaultBucket).trim() || defaultBucket; }
 export async function uploadMedia(key: string, bytes: ArrayBuffer, contentType: string) {
   const {error} = await database().storage.from(mediaBucketName()).upload(key, new Blob([bytes], {type: contentType}), {contentType, cacheControl: "31536000", upsert: false});
   if (error) throw error;

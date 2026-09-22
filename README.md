@@ -83,6 +83,10 @@ Sem `SUPABASE_URL` e `SUPABASE_SECRET_KEY` o site abre, mas eventos, galeria e p
 
 No Worker, abra **Domínios** (ou **Configurações → Domínios e rotas**) → **Adicionar** → **Domínio personalizado** e informe o domínio. Se o DNS do domínio ainda não estiver no Cloudflare, adicione o site em **Websites** e troque os nameservers no registrador.
 
+### Alternativa: Vercel
+
+O código também roda na Vercel sem alterações: o arquivo `vercel.json` define `next build` como comando de build. Em [vercel.com/new](https://vercel.com/new), importe o repositório do GitHub, cadastre as variáveis `SUPABASE_URL` e `SUPABASE_SECRET_KEY` em **Environment Variables** e clique em **Deploy**. Para o domínio, em **Settings → Domains** adicione `ccvisaoprofetica.online` e siga o registro DNS que a Vercel indicar.
+
 ### Publicação manual
 
 Com o Wrangler autenticado (`npx wrangler login`), o mesmo deploy pode ser feito localmente:
