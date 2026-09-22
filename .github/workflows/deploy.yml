@@ -1,0 +1,61 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Publish to Cloudflare Workers
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy Worker
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Application secrets live in the GitHub "production" environment and are
+      # pushed to the Worker on every deploy. Empty values are skipped so nothing
+      # already configured in Cloudflare is erased.
+      - name: Sync Worker secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SUPABASE_STORAGE_BUCKET: ${{ secrets.SUPABASE_STORAGE_BUCKET }}
+          ADMIN_SETUP_TOKEN_HASH: ${{ secrets.ADMIN_SETUP_TOKEN_HASH }}
+          ADMIN_SETUP_EXPIRES_AT: ${{ secrets.ADMIN_SETUP_EXPIRES_AT }}
+        run: |
+          node --input-type=module - <<'NODE' > "$RUNNER_TEMP/secrets.json"
+          const names = ["SUPABASE_URL", "SUPABASE_SECRET_KEY", "SUPABASE_STORAGE_BUCKET", "ADMIN_SETUP_TOKEN_HASH", "ADMIN_SETUP_EXPIRES_AT"];
+          const secrets = Object.fromEntries(names.filter(name => process.env[name]).map(name => [name, process.env[name]]));
+          console.log(JSON.stringify(secrets));
+          NODE
+          if [ "$(cat "$RUNNER_TEMP/secrets.json")" = "{}" ]; then
+            echo "No application secrets configured in GitHub; skipping."
+          else
+            npx wrangler secret bulk "$RUNNER_TEMP/secrets.json"
+          fi
+          rm -f "$RUNNER_TEMP/secrets.json"

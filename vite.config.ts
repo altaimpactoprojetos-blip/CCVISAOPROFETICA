@@ -10,6 +10,8 @@ const localBindingConfig = {
   compatibility_flags: ["nodejs_compat"],
   d1_databases: [],
   r2_buckets: [],
+  // Used by the /_vinext/image optimizer in worker/index.ts.
+  images: { binding: "IMAGES" },
 };
 
 export default defineConfig(async () => {
