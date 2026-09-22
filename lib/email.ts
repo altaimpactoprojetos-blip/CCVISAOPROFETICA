@@ -1,4 +1,4 @@
-import { formatDate } from "./content";
+import { emailSettings, formatDate } from "./content";
 import type { Ticket } from "./tickets";
 
 /**
@@ -6,9 +6,10 @@ import type { Ticket } from "./tickets";
  * não está configurada: a inscrição nunca depende do envio do e-mail.
  */
 export async function sendTicketEmail(ticket: Ticket, url: string) {
-  const apiKey = String(process.env.BREVO_API_KEY ?? "").trim();
-  const senderEmail = String(process.env.BREVO_SENDER_EMAIL ?? "").trim();
-  const senderName = String(process.env.BREVO_SENDER_NAME ?? "Comunidade Cristã Visão Profética").trim();
+  const stored = await emailSettings().catch(error => { console.error("Email settings unavailable", error); return null; });
+  const apiKey = String(process.env.BREVO_API_KEY ?? stored?.brevo_api_key ?? "").trim();
+  const senderEmail = String(process.env.BREVO_SENDER_EMAIL ?? stored?.sender_email ?? "").trim();
+  const senderName = String(process.env.BREVO_SENDER_NAME ?? stored?.sender_name ?? "").trim() || "Comunidade Cristã Visão Profética";
   if (!apiKey || !senderEmail || !ticket.email) return false;
   const when = `${formatDate(ticket.event.event_date)}${ticket.event.time ? ` às ${ticket.event.time}` : ""}`;
   const escape = (value: string) => value.replace(/[&<>"']/g, char => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[char] as string));
