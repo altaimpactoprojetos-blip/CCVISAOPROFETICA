@@ -29,14 +29,25 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Secrets are often pasted with extra text around them (a curl command,
+      # "Bearer", a label). Extract the credential itself before using it.
       # Wrangler discovers the account from the token when it can reach exactly
-      # one account, so the ID is only forwarded when it looks like a real one.
-      - name: Resolve Cloudflare account
+      # one account, so the account ID is only forwarded when it looks real.
+      - name: Resolve Cloudflare credentials
         env:
-          ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAW_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAW_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [[ "$ACCOUNT_ID" =~ ^[0-9a-f]{32}$ ]]; then
-            echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT_ID" >> "$GITHUB_ENV"
+          token="$(printf '%s' "$RAW_TOKEN" | grep -oE '[A-Za-z0-9_-]{40,}' | head -n1 || true)"
+          if [ -z "$token" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN secret does not contain an API token."
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "CLOUDFLARE_API_TOKEN=$token" >> "$GITHUB_ENV"
+          account_id="$(printf '%s' "$RAW_ACCOUNT_ID" | grep -oE '[0-9a-f]{32}' | head -n1 || true)"
+          if [ -n "$account_id" ]; then
+            echo "CLOUDFLARE_ACCOUNT_ID=$account_id" >> "$GITHUB_ENV"
             echo "Using the configured Cloudflare account ID."
           else
             echo "CLOUDFLARE_ACCOUNT_ID secret is missing or invalid; letting Wrangler pick the token's account."
@@ -44,15 +55,12 @@ jobs:
 
       - name: Deploy Worker
         run: npx wrangler deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       # Application secrets live in the GitHub repository (or "production"
       # environment) secrets and are pushed to the Worker on every deploy. Empty values are skipped so nothing
       # already configured in Cloudflare is erased.
       - name: Sync Worker secrets
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_STORAGE_BUCKET: ${{ secrets.SUPABASE_STORAGE_BUCKET }}
@@ -60,8 +68,19 @@ jobs:
           ADMIN_SETUP_EXPIRES_AT: ${{ secrets.ADMIN_SETUP_EXPIRES_AT }}
         run: |
           node --input-type=module - <<'NODE' > "$RUNNER_TEMP/secrets.json"
+          const clean = {
+            SUPABASE_URL: value => value.match(/https:\/\/[a-z0-9-]+\.supabase\.co/)?.[0],
+            SUPABASE_SECRET_KEY: value => value.match(/sb_secret_[A-Za-z0-9_-]+/)?.[0] ?? value.match(/eyJ[A-Za-z0-9_.-]{40,}/)?.[0],
+          };
           const names = ["SUPABASE_URL", "SUPABASE_SECRET_KEY", "SUPABASE_STORAGE_BUCKET", "ADMIN_SETUP_TOKEN_HASH", "ADMIN_SETUP_EXPIRES_AT"];
-          const secrets = Object.fromEntries(names.filter(name => process.env[name]).map(name => [name, process.env[name]]));
+          const secrets = {};
+          for (const name of names) {
+            const raw = (process.env[name] ?? "").trim();
+            if (!raw) continue;
+            const value = clean[name] ? clean[name](raw) : raw;
+            if (!value) { console.error(`${name} secret does not contain a recognizable value; skipping.`); continue; }
+            secrets[name] = value;
+          }
           console.log(JSON.stringify(secrets));
           NODE
           if [ "$(cat "$RUNNER_TEMP/secrets.json")" = "{}" ]; then
