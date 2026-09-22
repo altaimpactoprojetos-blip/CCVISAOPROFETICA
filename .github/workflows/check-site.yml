@@ -1,0 +1,29 @@
+name: Check site
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Inspect what each address serves
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: DNS
+        run: |
+          for host in ccvisaoprofetica.online www.ccvisaoprofetica.online; do
+            echo "== $host"; dig +short A "$host"; dig +short CNAME "$host"; done
+          echo "== NS"; dig +short NS ccvisaoprofetica.online
+      - name: HTTP
+        run: |
+          for url in https://ccvisaoprofetica.online/eventos https://www.ccvisaoprofetica.online/eventos https://cc-visao-profetica.altaimpactoprojetos.workers.dev/eventos; do
+            echo "=================== $url"
+            curl -sS -o body.html -D headers.txt -L --max-time 30 "$url" || { echo "request failed"; continue; }
+            grep -iE "^(HTTP/|server:|cf-ray|x-vercel|location:)" headers.txt
+            echo "-- markers"
+            grep -c "mulheres-com-visao-2026.jpg" body.html | sed 's/^/image references: /'
+            grep -o "de 2026[^<]*<" body.html | head -3 | sed 's/^/date fragment: /'
+            grep -o "Agenda temporariamente indisponível\|Novos encontros em breve\|Inscrições abertas\|Inscrições encerradas" body.html | sort -u | sed 's/^/status: /'
+            echo "-- image"
+            curl -sS -o /dev/null -w "image http %{http_code} type %{content_type}\n" --max-time 30 "${url%/eventos}/eventos/mulheres-com-visao-2026.jpg"
+          done
