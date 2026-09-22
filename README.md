@@ -52,12 +52,45 @@ Use JPG, PNG ou WebP de até 8 MB. A arte do evento pode ter 1600 × 900 px. Os 
 - Banco Supabase Postgres, acessado somente no servidor com `@supabase/supabase-js`.
 - Imagens Supabase Storage em bucket privado.
 - Esquema legado em `db/schema.ts` e `drizzle/` preservado para auditoria; migrações atuais em `supabase/migrations/`.
-- Manifesto de identidade e bindings em `.openai/hosting.json`.
+- Publicação via GitHub Actions no Cloudflare Workers (`.github/workflows/deploy.yml`); `.openai/hosting.json` é o manifesto da hospedagem anterior.
 - APIs administrativas em `app/api/admin/`; controles públicos em `app/api/submissions/` e `app/api/media/`.
 
 O login da Área do Aluno permanece o existente; o login próprio desta versão se aplica à administração. A conexão com Supabase é feita no servidor; nenhuma chave secreta é embutida no navegador.
 
 O endereço atual e a estrutura visual do site continuam no mesmo projeto e domínio enquanto a camada de dados é validada. O Supabase não substitui automaticamente a hospedagem do Worker; trocar também a hospedagem exigiria uma etapa separada. O repositório guarda o código, imagens estáticas e migrações. Inscrições reais, credenciais e fotos enviadas pelo painel ficam no Supabase e exigem backup de dados separado.
+
+## Publicação no Cloudflare Workers
+
+O site é compilado como um Worker do Cloudflare (`dist/server/`) com os arquivos estáticos em `dist/client/`. O workflow `.github/workflows/deploy.yml` publica automaticamente a cada push na branch `main` e também pode ser disparado manualmente na aba **Actions** do GitHub.
+
+### Configuração inicial (uma vez)
+
+1. Crie uma conta em [dash.cloudflare.com](https://dash.cloudflare.com) e anote o **Account ID** (menu **Workers & Pages**, lado direito).
+2. Crie um token de API em **My Profile → API Tokens → Create Token** usando o modelo **Edit Cloudflare Workers**.
+3. No GitHub, em **Settings → Environments**, crie o ambiente `production` e adicione os segredos:
+
+| Segredo | Valor |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Token criado no passo 2. |
+| `CLOUDFLARE_ACCOUNT_ID` | Account ID do passo 1. |
+| `SUPABASE_URL` | URL do projeto Supabase. |
+| `SUPABASE_SECRET_KEY` | Chave secreta do servidor (Project Settings → API Keys → Secret keys). |
+| `SUPABASE_STORAGE_BUCKET` | Opcional. Padrão `cc-visao-profetica-media`. |
+| `ADMIN_SETUP_TOKEN_HASH` | Opcional. Só na primeira ativação do administrador. |
+| `ADMIN_SETUP_EXPIRES_AT` | Opcional. Só na primeira ativação do administrador. |
+
+4. Faça um push na `main` ou rode o workflow **Deploy** manualmente. O Worker `cc-visao-profetica` fica disponível em `https://cc-visao-profetica.<sua-conta>.workers.dev`.
+5. Para usar o domínio próprio, abra o Worker no painel do Cloudflare em **Settings → Domains & Routes → Add → Custom domain** e informe o domínio. Se o DNS do domínio ainda não estiver no Cloudflare, adicione o site em **Websites** e troque os nameservers no registrador.
+
+Os segredos da aplicação são enviados ao Worker em cada deploy; valores vazios no GitHub são ignorados e não apagam o que já está configurado no Cloudflare.
+
+### Publicação manual
+
+Com o Wrangler autenticado (`npx wrangler login`), o mesmo deploy pode ser feito localmente:
+
+```bash
+npm run deploy
+```
 
 ## Desenvolvimento e validação
 
