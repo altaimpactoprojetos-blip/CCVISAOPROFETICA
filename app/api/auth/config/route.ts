@@ -1,10 +1,8 @@
-import { env } from "cloudflare:workers";
-
 export const dynamic = "force-dynamic";
 
 export function GET() {
-  const supabaseUrl = String(env.SUPABASE_URL ?? "").trim();
-  const supabasePublishableKey = String(env.SUPABASE_PUBLISHABLE_KEY ?? "").trim();
+  const supabaseUrl = String(process.env.SUPABASE_URL ?? "").trim();
+  const supabasePublishableKey = String(process.env.SUPABASE_PUBLISHABLE_KEY ?? "").trim();
 
   if (!supabaseUrl || !supabasePublishableKey) {
     return Response.json(

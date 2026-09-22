@@ -1,5 +1,4 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { env } from "cloudflare:workers";
 
 export type Database = SupabaseClient;
 
@@ -9,8 +8,8 @@ export type Database = SupabaseClient;
  * key must never be given permission to read or change administrative data.
  */
 export function database(): Database {
-  const url = String(env.SUPABASE_URL ?? "").trim();
-  const secretKey = String(env.SUPABASE_SECRET_KEY ?? "").trim();
+  const url = String(process.env.SUPABASE_URL ?? "").trim();
+  const secretKey = String(process.env.SUPABASE_SECRET_KEY ?? "").trim();
   if (!url || !secretKey) throw new Error("Supabase não está configurado no ambiente do site");
 
   return createClient(url, secretKey, {

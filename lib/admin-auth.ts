@@ -72,7 +72,7 @@ export async function startSession(adminId: number, verifiedHash: string) {
 }
 export async function limitAuth(request: Request, account: string) {
   const db=database(),now=Math.floor(Date.now()/1000);
-  const keys=[`ip:${digest(request.headers.get("cf-connecting-ip") || "unknown")}`,`account:${digest(account.toLowerCase())}`];
+  const keys=[`ip:${digest(request.headers.get("cf-connecting-ip") || request.headers.get("x-real-ip") || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown")}`,`account:${digest(account.toLowerCase())}`];
   for (const key of keys) {
     const result = await db.rpc("register_admin_auth_attempt", {p_key:key, p_now:now, p_reset_at:now+900});
     if (result.error) throw result.error;
