@@ -15,8 +15,8 @@ export function date(value: unknown, required = true) {
   return result;
 }
 export function time(value: unknown) {
-  const result = text(value, "horário", 5);
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(result)) throw new RequestError("Informe um horário válido.");
+  const result = text(value, "horário", 5, false);
+  if (result && !/^([01]\d|2[0-3]):[0-5]\d$/.test(result)) throw new RequestError("Informe um horário válido.");
   return result;
 }
 export async function body(request: Request) {

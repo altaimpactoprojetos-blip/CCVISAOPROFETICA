@@ -47,7 +47,7 @@ export function AdminPanel() {
       </>}
       {tab === "events" && <>
         <div className="admin-section-heading"><h2>Eventos</h2><button className="btn-secondary" onClick={() => setEventId(null)}>Novo evento</button></div>
-        <div className="admin-editor-layout"><div className="admin-record-list">{data.events.length ? data.events.map(event => <button key={event.id} className={`panel admin-record ${eventId === event.id ? "is-selected" : ""}`} onClick={() => setEventId(event.id)}><span className="admin-badge">{event.published ? "Publicado" : "Rascunho"}</span><strong>{event.name}</strong><span>{dateLabel(event.event_date)} · {event.time}</span><span>{event.registrations} inscritos{event.capacity ? ` de ${event.capacity} vagas` : ""}</span></button>) : <p className="body-copy">Nenhum evento cadastrado.</p>}</div>
+        <div className="admin-editor-layout"><div className="admin-record-list">{data.events.length ? data.events.map(event => <button key={event.id} className={`panel admin-record ${eventId === event.id ? "is-selected" : ""}`} onClick={() => setEventId(event.id)}><span className="admin-badge">{event.published ? "Publicado" : "Rascunho"}</span><strong>{event.name}</strong><span>{dateLabel(event.event_date)}{event.time ? ` · ${event.time}` : ""}</span><span>{event.registrations} inscritos{event.capacity ? ` de ${event.capacity} vagas` : ""}</span></button>) : <p className="body-copy">Nenhum evento cadastrado.</p>}</div>
         <EventEditor key={eventId ?? "new"} event={data.events.find(event => event.id === eventId)} onSaved={async id => {await refresh(); setEventId(id);}} onRegistrations={registrations}/></div>
       </>}
       {tab === "submissions" && <Registrations events={data.events} initialEvent={registrationEvent} onChanged={refresh}/>}
@@ -79,7 +79,7 @@ function EventEditor({event, onSaved, onRegistrations}: {event?: EventRecord; on
     <div className="mt-6 grid gap-5 sm:grid-cols-2">
       <Field label="Nome do evento *" full><input name="name" className="field-control" required maxLength={160} defaultValue={event?.name}/></Field>
       <Field label="Data *"><input name="event_date" type="date" required className="field-control" defaultValue={event?.event_date}/></Field>
-      <Field label="Horário *"><input name="time" type="time" required className="field-control" defaultValue={event?.time}/></Field>
+      <Field label="Horário (opcional)"><input name="time" type="time" className="field-control" defaultValue={event?.time}/></Field>
       <Field label="Local *" full><input name="location" required maxLength={300} className="field-control" defaultValue={event?.location}/></Field>
       <Field label="Descrição" full><textarea name="description" rows={5} maxLength={5000} className="field-control" defaultValue={event?.description}/></Field>
       <Field label="Número de vagas"><input name="capacity" type="number" min={1} max={100000} placeholder="Sem limite" className="field-control" defaultValue={event?.capacity ?? ""}/></Field>
