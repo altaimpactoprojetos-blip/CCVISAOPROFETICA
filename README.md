@@ -67,12 +67,12 @@ O site é compilado como um Worker do Cloudflare (`dist/server/`) com os arquivo
 
 1. Crie uma conta em [dash.cloudflare.com](https://dash.cloudflare.com) e anote o **Account ID** (menu **Workers & Pages**, lado direito).
 2. Crie um token de API em **My Profile → API Tokens → Create Token** usando o modelo **Edit Cloudflare Workers**.
-3. No GitHub, em **Settings → Environments**, crie o ambiente `production` e adicione os segredos:
+3. No GitHub, em **Settings → Secrets and variables → Actions → New repository secret**, adicione os segredos:
 
 | Segredo | Valor |
 | --- | --- |
 | `CLOUDFLARE_API_TOKEN` | Token criado no passo 2. |
-| `CLOUDFLARE_ACCOUNT_ID` | Account ID do passo 1. |
+| `CLOUDFLARE_ACCOUNT_ID` | Opcional. Account ID do passo 1 (32 caracteres hexadecimais). Se ausente ou inválido, o Wrangler usa a única conta acessível pelo token. |
 | `SUPABASE_URL` | URL do projeto Supabase. |
 | `SUPABASE_SECRET_KEY` | Chave secreta do servidor (Project Settings → API Keys → Secret keys). |
 | `SUPABASE_STORAGE_BUCKET` | Opcional. Padrão `cc-visao-profetica-media`. |

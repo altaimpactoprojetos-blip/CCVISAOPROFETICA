@@ -29,19 +29,30 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Wrangler discovers the account from the token when it can reach exactly
+      # one account, so the ID is only forwarded when it looks like a real one.
+      - name: Resolve Cloudflare account
+        env:
+          ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [[ "$ACCOUNT_ID" =~ ^[0-9a-f]{32}$ ]]; then
+            echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT_ID" >> "$GITHUB_ENV"
+            echo "Using the configured Cloudflare account ID."
+          else
+            echo "CLOUDFLARE_ACCOUNT_ID secret is missing or invalid; letting Wrangler pick the token's account."
+          fi
+
       - name: Deploy Worker
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # Application secrets live in the GitHub "production" environment and are
-      # pushed to the Worker on every deploy. Empty values are skipped so nothing
+      # Application secrets live in the GitHub repository (or "production"
+      # environment) secrets and are pushed to the Worker on every deploy. Empty values are skipped so nothing
       # already configured in Cloudflare is erased.
       - name: Sync Worker secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_STORAGE_BUCKET: ${{ secrets.SUPABASE_STORAGE_BUCKET }}
