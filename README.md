@@ -52,7 +52,7 @@ Use JPG, PNG ou WebP de até 8 MB. A arte do evento pode ter 1600 × 900 px. Os 
 - Banco Supabase Postgres, acessado somente no servidor com `@supabase/supabase-js`.
 - Imagens Supabase Storage em bucket privado.
 - Esquema legado em `db/schema.ts` e `drizzle/` preservado para auditoria; migrações atuais em `supabase/migrations/`.
-- Publicação via GitHub Actions no Cloudflare Workers (`.github/workflows/deploy.yml`); `.openai/hosting.json` é o manifesto da hospedagem anterior.
+- Publicação pelo Cloudflare Workers Builds a partir da branch `main`; `.openai/hosting.json` é o manifesto da hospedagem anterior.
 - APIs administrativas em `app/api/admin/`; controles públicos em `app/api/submissions/` e `app/api/media/`.
 
 O login da Área do Aluno permanece o existente; o login próprio desta versão se aplica à administração. A conexão com Supabase é feita no servidor; nenhuma chave secreta é embutida no navegador.
@@ -61,28 +61,27 @@ O endereço atual e a estrutura visual do site continuam no mesmo projeto e dom�
 
 ## Publicação no Cloudflare Workers
 
-O site é compilado como um Worker do Cloudflare (`dist/server/`) com os arquivos estáticos em `dist/client/`. O workflow `.github/workflows/deploy.yml` publica automaticamente a cada push na branch `main` e também pode ser disparado manualmente na aba **Actions** do GitHub.
+O site é compilado como um Worker do Cloudflare (`dist/server/`) com os arquivos estáticos em `dist/client/`. A publicação é feita pelo **Workers Builds**, a integração do Cloudflare com o GitHub: a cada push na branch `main`, o Cloudflare clona o repositório, roda `npm run build` e `npx wrangler deploy`, e publica o Worker `cc-visao-profetica`.
 
-### Configuração inicial (uma vez)
+Acompanhe as builds em [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers e Pages** → `cc-visao-profetica` → **Implantações**. O botão **Retry build** refaz a última publicação.
 
-1. Crie uma conta em [dash.cloudflare.com](https://dash.cloudflare.com) e anote o **Account ID** (menu **Workers & Pages**, lado direito).
-2. Crie um token de API em **My Profile → API Tokens → Create Token** usando o modelo **Edit Cloudflare Workers**.
-3. No GitHub, em **Settings → Secrets and variables → Actions → New repository secret**, adicione os segredos:
+### Variáveis do Worker
+
+Cadastre em **Workers e Pages** → `cc-visao-profetica` → **Configurações** → **Variáveis e segredos**, sempre como **Segredo**:
 
 | Segredo | Valor |
 | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Token criado no passo 2. |
-| `CLOUDFLARE_ACCOUNT_ID` | Opcional. Account ID do passo 1 (32 caracteres hexadecimais). Se ausente ou inválido, o Wrangler usa a única conta acessível pelo token. |
 | `SUPABASE_URL` | URL do projeto Supabase. |
 | `SUPABASE_SECRET_KEY` | Chave secreta do servidor (Project Settings → API Keys → Secret keys). |
 | `SUPABASE_STORAGE_BUCKET` | Opcional. Padrão `cc-visao-profetica-media`. |
 | `ADMIN_SETUP_TOKEN_HASH` | Opcional. Só na primeira ativação do administrador. |
 | `ADMIN_SETUP_EXPIRES_AT` | Opcional. Só na primeira ativação do administrador. |
 
-4. Faça um push na `main` ou rode o workflow **Deploy** manualmente. O Worker `cc-visao-profetica` fica disponível em `https://cc-visao-profetica.<sua-conta>.workers.dev`.
-5. Para usar o domínio próprio, abra o Worker no painel do Cloudflare em **Settings → Domains & Routes → Add → Custom domain** e informe o domínio. Se o DNS do domínio ainda não estiver no Cloudflare, adicione o site em **Websites** e troque os nameservers no registrador.
+Sem `SUPABASE_URL` e `SUPABASE_SECRET_KEY` o site abre, mas eventos, galeria e painel aparecem como indisponíveis.
 
-Os segredos da aplicação são enviados ao Worker em cada deploy; valores vazios no GitHub são ignorados e não apagam o que já está configurado no Cloudflare.
+### Domínio próprio
+
+No Worker, abra **Domínios** (ou **Configurações → Domínios e rotas**) → **Adicionar** → **Domínio personalizado** e informe o domínio. Se o DNS do domínio ainda não estiver no Cloudflare, adicione o site em **Websites** e troque os nameservers no registrador.
 
 ### Publicação manual
 
