@@ -32,6 +32,7 @@ export function SubmissionForm({ kind, fields, buttonLabel, successMessage, intr
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Não foi possível enviar agora.");
       form.reset();
+      if (typeof result.ticketUrl === "string" && result.ticketUrl.startsWith(window.location.origin + "/")) { window.location.assign(result.ticketUrl); return; }
       setState("success");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Confira sua conexão e tente novamente.");

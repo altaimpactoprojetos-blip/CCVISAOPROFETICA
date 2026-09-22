@@ -1,5 +1,7 @@
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { database, rpcNumber, supabaseErrorCode } from "../../../lib/database";
+import { assignTicketCode, ticketByCode, ticketUrl } from "../../../lib/tickets";
+import { sendTicketEmail } from "../../../lib/email";
 
 const allowedKinds = new Set(["fazer_parte", "celula", "batismo", "oracao", "contato", "evento", "ministerio"]);
 function cleanPayload(value: unknown): Record<string, string> {
@@ -34,7 +36,15 @@ export async function POST(request: Request) {
       if (result.error) throw result.error;
       const submissionId = rpcNumber(result.data);
       if (!submissionId) return Response.json({error: "Este evento está com inscrições encerradas ou sem vagas."}, {status: 409});
-      return Response.json({ok: true, id: submissionId}, {status: 201});
+      // O comprovante e o e-mail são complementares: a vaga já está garantida neste ponto.
+      let ticketLink: string | null = null;
+      try {
+        const code = await assignTicketCode(submissionId);
+        ticketLink = ticketUrl(new URL(request.url).origin, code);
+        const ticket = await ticketByCode(code);
+        if (ticket) await sendTicketEmail(ticket, ticketLink).catch(error => console.error("Ticket email failed", error));
+      } catch (error) { console.error("Ticket code failed", error); }
+      return Response.json({ok: true, id: submissionId, ticketUrl: ticketLink}, {status: 201});
     }
     const result = await db.from("submissions").insert({kind, payload: JSON.stringify(payload), owner_email: user?.email ?? null}).select("id").single();
     if (result.error) throw result.error;
