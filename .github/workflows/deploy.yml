@@ -38,11 +38,16 @@ jobs:
           RAW_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           RAW_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          token="$(printf '%s' "$RAW_TOKEN" | grep -oE '[A-Za-z0-9_-]{40,}' | head -n1 || true)"
+          compact="$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')"
+          token="$(printf '%s' "$compact" | grep -oE 'cfut_[A-Za-z0-9_-]{20,}' | head -n1 || true)"
+          [ -n "$token" ] || token="$(printf '%s' "$compact" | sed 's/^Bearer//' | grep -oE '[A-Za-z0-9_-]{35,}' | head -n1 || true)"
           if [ -z "$token" ]; then
-            echo "::error::CLOUDFLARE_API_TOKEN secret does not contain an API token."
+            echo "::error::CLOUDFLARE_API_TOKEN secret does not contain a Cloudflare API token (received ${#RAW_TOKEN} characters, ${#compact} without spaces). Create one at dash.cloudflare.com → My Profile → API Tokens → Edit Cloudflare Workers template, and paste only the token."
             exit 1
           fi
+          case "$token" in
+            ghp_*|github_pat_*) echo "::error::CLOUDFLARE_API_TOKEN contains a GitHub token, not a Cloudflare one."; exit 1;;
+          esac
           echo "::add-mask::$token"
           echo "CLOUDFLARE_API_TOKEN=$token" >> "$GITHUB_ENV"
           account_id="$(printf '%s' "$RAW_ACCOUNT_ID" | grep -oE '[0-9a-f]{32}' | head -n1 || true)"
