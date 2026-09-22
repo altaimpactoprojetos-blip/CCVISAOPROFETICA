@@ -18,8 +18,9 @@ export async function POST(request: Request) {
     if (status !== "open" && status !== "closed") throw new RequestError("Situação das inscrições inválida.");
     const published = publication(data.published);
     const imageUrl = text(data.image_url ?? "", "imagem", 150, false) || null;
-    if (imageUrl && !/^\/api\/media\/[a-f0-9-]{36}$/.test(imageUrl)) throw new RequestError("Envie a imagem pelo painel.");
-    if (imageUrl) {
+    const staticImage = Boolean(imageUrl && /^\/eventos\/[a-z0-9-]+\.(?:jpg|jpeg|png|webp)$/.test(imageUrl));
+    if (imageUrl && !staticImage && !/^\/api\/media\/[a-f0-9-]{36}$/.test(imageUrl)) throw new RequestError("Envie a imagem pelo painel.");
+    if (imageUrl && !staticImage) {
       const key = imageUrl.split("/").pop();
       const asset = await db.from("media_assets").select("key").eq("key", key).maybeSingle();
       if (asset.error) throw asset.error;
