@@ -203,7 +203,15 @@ main .page-hero .text-zinc-400, main .bg-black .eyebrow, main .next-steps .text-
 .admin-photo-grid figcaption { padding: 12px; overflow-wrap: anywhere; font-size: .875rem; }
 .admin-schedule-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 12px; align-items: end; }
 .admin-layout button:disabled, .admin-layout input:disabled { opacity: .55; cursor: not-allowed; }
-.event-cover { width: 100%; height: auto; display: block; background: #eceff2; }
+.event-cover { width: 100%; aspect-ratio: 3/2; object-fit: cover; display: block; background: #eceff2; }
+.event-detail { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(0,1fr); gap: 48px; align-items: start; }
+.event-detail-cover { border-radius: 12px; box-shadow: 0 18px 40px -24px rgba(17,19,22,.45); }
+.event-facts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1px; margin: 28px 0 36px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.event-facts div { padding: 16px 18px; background: #fff; }
+.event-facts dt { font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.event-facts dd { margin-top: .35rem; font-weight: 600; line-height: 1.45; }
+.event-detail-aside { position: sticky; top: 96px; }
+.event-registration { padding: 32px; }
 .event-cards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; }
 .event-card { overflow: hidden; display: flex; flex-direction: column; }
 .event-card-body { padding: 24px; display: flex; flex: 1; flex-direction: column; align-items: flex-start; }
@@ -216,7 +224,7 @@ main .page-hero .text-zinc-400, main .bg-black .eyebrow, main .next-steps .text-
 .event-date { font-size: .875rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #3b414a; }
 .registration-intro { margin-bottom: 1.5rem; }
 .registration-intro h2 { font-size: 1.75rem; font-weight: 800; letter-spacing: -.01em; }
-.registration-about { margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--line); }
+.registration-about { margin-bottom: 0; }
 .registration-about h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -.01em; }
 .registration-about p { margin-top: .9rem; color: var(--muted); line-height: 1.75; }
 .registration-about .registration-about-closing { font-weight: 700; color: inherit; }
@@ -238,8 +246,9 @@ main .page-hero .text-zinc-400, main .bg-black .eyebrow, main .next-steps .text-
 .gallery-images img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; }
 .gallery-images figcaption { padding-top: 10px; color: var(--muted); font-size: .875rem; }
 @media(max-width:1200px) { .admin-layout { grid-template-columns: 190px minmax(0,1fr); gap: 20px; } .admin-editor-layout { grid-template-columns: 1fr; } .admin-record-list { grid-template-columns: repeat(2,minmax(0,1fr)); max-height: 310px; } .admin-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-filters { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-schedule-row { grid-template-columns: 1fr 1fr; } }
+@media(max-width:1000px) { .event-detail { grid-template-columns: 1fr; gap: 40px; } .event-detail-aside { position: static; } }
 @media(max-width:800px) { .admin-layout { grid-template-columns: 1fr; } .admin-sidebar { position: static; } .admin-sidebar nav { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-return { margin: 16px; } .event-cards, .gallery-images { grid-template-columns: repeat(2,minmax(0,1fr)); } }
-@media(max-width:540px) { .admin-overview-grid, .admin-filters, .admin-details, .admin-record-list, .admin-photo-grid, .event-cards, .gallery-images { grid-template-columns: 1fr; } .admin-metrics article { padding: 18px; } .admin-schedule-row { border-bottom: 1px solid var(--line); padding-bottom: 20px; } .admin-schedule-row > label:first-child { grid-column: 1/-1; } }
+@media(max-width:540px) { .event-facts { grid-template-columns: 1fr; } .event-registration { padding: 22px; } .admin-overview-grid, .admin-filters, .admin-details, .admin-record-list, .admin-photo-grid, .event-cards, .gallery-images { grid-template-columns: 1fr; } .admin-metrics article { padding: 18px; } .admin-schedule-row { border-bottom: 1px solid var(--line); padding-bottom: 20px; } .admin-schedule-row > label:first-child { grid-column: 1/-1; } }
 
 /* Quem Somos: church history told in chapters with photographs. */
 .story-intro { max-width: 880px; padding-bottom: clamp(48px, 6vw, 80px); border-bottom: 1px solid var(--line); }
