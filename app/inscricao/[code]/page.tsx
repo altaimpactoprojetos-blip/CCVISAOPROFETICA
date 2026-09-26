@@ -21,6 +21,7 @@ export default async function TicketPage({params}: {params: Promise<{code: strin
   const url = ticketUrl(`https://${host}`, ticket.code);
   const qr = await ticketQrSvg(url);
   const active = ticket.status !== "cancelado";
+  const maskedEmail = ticket.email.replace(/^(.)[^@]*(@.*)$/, "$1***$2");
   const when = `${formatDate(ticket.event.event_date)}${ticket.event.time ? ` às ${ticket.event.time}` : ""}`;
   return <SiteShell>
     <PageHero eyebrow="Comprovante de inscrição" title={ticket.event.name} description={`${when} · ${ticket.event.location}`}/>
@@ -44,6 +45,7 @@ export default async function TicketPage({params}: {params: Promise<{code: strin
           </div>
           <p className="body-copy text-sm">Apresente este QR code na entrada do evento. Salve esta página ou compartilhe o link.</p>
           {active && <ShareTicket url={url} eventName={ticket.event.name} when={when}/>}
+          {active && ticket.email && <div className="ticket-email-notice" role="note"><strong>Enviamos este comprovante para o seu e-mail</strong><span>A mensagem foi para {maskedEmail}. Se não encontrar na caixa de entrada, confira a pasta de <strong>spam</strong> ou <strong>lixo eletrônico</strong> e marque como &quot;não é spam&quot;.</span></div>}
         </div>
       </article>
     </div></section>
