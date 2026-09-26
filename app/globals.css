@@ -271,8 +271,10 @@ main .page-hero .text-zinc-400, main .bg-black .eyebrow, main .next-steps .text-
 .ticket-details { display: grid; gap: 6px; margin-top: 16px; font-size: .95rem; color: #3b414a; }
 .ticket-details strong { color: var(--ink); }
 .ticket-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.ticket-email-notice { display: grid; gap: 4px; width: 100%; padding: 14px 16px; border: 1px solid #f1d9a8; border-radius: 12px; background: #fff8ea; color: #6b4a00; font-size: .875rem; line-height: 1.6; text-align: left; }
+.ticket-email-notice > strong { color: #4d3500; }
 .ticket-cancelled { padding: 10px 14px; border-radius: 10px; background: #fdecec; color: #9b1c1c; font-weight: 600; }
-@media print { .site-header, .site-footer, .ticket-actions, .page-hero { display: none !important; } .ticket { box-shadow: none; border: 1px solid #000; } }
+@media print { .site-header, .site-footer, .ticket-actions, .ticket-email-notice, .page-hero { display: none !important; } .ticket { box-shadow: none; border: 1px solid #000; } }
 .gallery-album + .gallery-album { margin-top: 64px; }
 .gallery-images { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; margin-top: 24px; }
 .gallery-images img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; }
