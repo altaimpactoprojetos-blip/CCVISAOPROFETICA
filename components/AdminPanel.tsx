@@ -3,7 +3,7 @@
 import {useCallback, useEffect, useState, type FormEvent, type ReactNode} from "react";
 import type {AdminData, Contact, EventRecord, GalleryRecord, PhotoRecord, Schedule, SubmissionRecord, EmailConfig} from "../lib/admin-types";
 import {AdminPassword} from "./AdminLogin";
-import {kindLabels, statusLabels} from "../lib/admin-types";
+import {kindLabels, kindSources, statusLabels} from "../lib/admin-types";
 
 async function api<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`/api/admin/${path}`, {...options, cache: "no-store"});
@@ -32,25 +32,42 @@ export function AdminPanel() {
     const result = await api<AdminData>("data"); setData(result); setError("");
   }, []);
   useEffect(() => { refresh().catch(error => setError(error.message)); }, [refresh]);
-  function registrations(id: number) { setRegistrationEvent(String(id)); setTab("submissions"); }
+  const [registrationKind, setRegistrationKind] = useState("");
+  function submissionsOf(event: string, kind: string) { setRegistrationEvent(event); setRegistrationKind(kind); setTab("submissions"); }
+  function registrations(id: number) { submissionsOf(String(id), ""); }
   if (!data) return <section className="content-section"><div className="container-shell panel p-8"><p role="status">{error ? "Não foi possível carregar o painel." : "Carregando informações da igreja…"}</p><Notice error={error}/>{error && <button className="btn-primary mt-4" onClick={() => refresh().catch(error => setError(error.message))}>Tentar novamente</button>}</div></section>;
+  const sortedEvents = [...data.events].sort((a, b) => a.event_date.localeCompare(b.event_date) || a.id - b.id);
+  const eventRegistrations = data.events.reduce((sum, event) => sum + event.registrations, 0);
+  const formKinds = ["batismo", "fazer_parte", "oracao", "celula", "contato", ...data.kinds.map(row => row.kind).filter(kind => kind !== "evento")]
+    .filter((kind, index, list) => list.indexOf(kind) === index)
+    .map(kind => data.kinds.find(row => row.kind === kind) ?? {kind, total: 0, pending: 0});
+  const formTotal = formKinds.reduce((sum, row) => sum + row.total, 0);
   return <div className="container-shell admin-layout">
     <aside className="admin-sidebar"><nav aria-label="Seções da administração">
       {[["overview", "Visão geral"], ["events", "Eventos"], ["submissions", "Inscrições e contatos"], ["galleries", "Fotos dos cultos"], ["settings", "Programação e contato"]].map(([key,label]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => setTab(key)}>{label}</button>)}
     </nav><a href="/" className="admin-return">Ver site público</a></aside>
     <div className="admin-workspace"><Notice error={error}/>
       {tab === "overview" && <>
-        <div className="admin-section-heading"><h2>Visão geral</h2><button className="btn-secondary" onClick={() => refresh().catch(error => setError(error.message))}>Atualizar números</button></div>
-        <div className="admin-metrics">{[["Cadastros recebidos", data.stats.submissions], ["Novos para atender", data.stats.new_submissions], ["Eventos publicados", data.stats.published_events], ["Fotos nos álbuns", data.stats.photos]].map(([label,value]) => <article key={label} className="panel"><p>{label}</p><strong>{Number(value).toLocaleString("pt-BR")}</strong></article>)}</div>
-        <div className="admin-overview-grid"><section className="panel p-6"><h3 className="text-xl font-bold">Cadastros por assunto</h3>{data.kinds.length ? <ul className="admin-count-list">{data.kinds.map(row => <li key={row.kind}><span>{kindLabels[row.kind] || row.kind}</span><strong>{row.total}</strong></li>)}</ul> : <p className="body-copy mt-4">As inscrições e mensagens aparecerão aqui assim que forem recebidas.</p>}<button className="btn-secondary mt-6" onClick={() => {setRegistrationEvent(""); setTab("submissions");}}>Consultar cadastros</button></section>
-        <section className="panel p-6"><h3 className="text-xl font-bold">Eventos e inscrições</h3>{data.events.length ? <ul className="admin-count-list">{data.events.slice(0,5).map(event => <li key={event.id}><button className="text-left underline underline-offset-4" onClick={() => registrations(event.id)}>{event.name}</button><strong>{event.registrations}{event.capacity ? ` / ${event.capacity}` : ""}</strong></li>)}</ul> : <p className="body-copy mt-4">Cadastre o primeiro evento, adicione a arte e abra as inscrições quando estiver pronto.</p>}<button className="btn-primary mt-6" onClick={() => {setEventId(null); setTab("events");}}>Criar evento</button></section></div>
+        <div className="admin-section-heading"><div><h2>Visão geral</h2><p className="admin-subtitle">Resumo do que chegou pelo site e dos eventos da igreja.</p></div><button className="btn-secondary" onClick={() => refresh().catch(error => setError(error.message))}>Atualizar números</button></div>
+        <div className="admin-metrics">{([["Aguardando atendimento", data.stats.new_submissions, "Cadastros com situação Novo"], ["Inscrições em eventos", eventRegistrations, `${data.events.length} evento(s) cadastrado(s)`], ["Pedidos pelo site", formTotal, "Batismo, fazer parte, oração e contato"], ["Eventos no site", data.stats.published_events, `${data.events.length - data.stats.published_events} em rascunho`]] as const).map(([label,value,hint]) => <article key={label} className="panel"><p>{label}</p><strong>{Number(value).toLocaleString("pt-BR")}</strong><span>{hint}</span></article>)}</div>
+        <section className="panel admin-overview-block"><div className="admin-block-heading"><div><h3>Eventos</h3><p>Datas, situação no site e inscritos de cada evento.</p></div><button className="btn-primary" onClick={() => {setEventId(null); setTab("events");}}>Criar evento</button></div>
+          {sortedEvents.length ? <ul className="admin-event-list">{sortedEvents.map(event => {const open = event.registration_status === "open" && (event.capacity === null || event.registrations < event.capacity); return <li key={event.id}>
+            {event.image_url ? <img src={event.image_url} alt="" className="admin-event-thumb"/> : <span className="admin-event-thumb"/>}
+            <div className="admin-event-info"><strong>{event.name}</strong><span>{dateLabel(event.event_date)}{event.time ? ` · ${event.time.replace(":","h")}` : ""}</span><div className="admin-event-tags"><span className={`admin-tag ${event.published ? "is-positive" : ""}`}>{event.published ? "No site" : "Rascunho"}</span><span className={`admin-tag ${open ? "is-positive" : ""}`}>{open ? "Inscrições abertas" : "Inscrições encerradas"}</span></div></div>
+            <div className="admin-event-count"><strong>{event.registrations}{event.capacity ? `/${event.capacity}` : ""}</strong><span>inscrito(s)</span></div>
+            <div className="admin-event-actions"><button className="btn-secondary" onClick={() => registrations(event.id)}>Ver inscritos</button><button className="admin-text-button" onClick={() => {setEventId(event.id); setTab("events");}}>Editar</button></div>
+          </li>;})}</ul> : <p className="body-copy mt-4">Cadastre o primeiro evento, adicione a arte e abra as inscrições quando estiver pronto.</p>}
+        </section>
+        <section className="panel admin-overview-block"><div className="admin-block-heading"><div><h3>Formulários do site</h3><p>Pessoas que preencheram os formulários das páginas do site (fora dos eventos).</p></div><button className="btn-secondary" onClick={() => submissionsOf("", "")}>Ver todos os cadastros</button></div>
+          <ul className="admin-form-list">{formKinds.map(row => <li key={row.kind}><button type="button" onClick={() => submissionsOf("", row.kind)} disabled={!row.total}><span className="admin-form-name"><strong>{kindLabels[row.kind] || row.kind}</strong><span>{kindSources[row.kind] || "Formulário do site"}</span></span>{row.pending > 0 && <span className="admin-tag is-attention">{row.pending} novo(s)</span>}<strong className="admin-form-total">{row.total}</strong></button></li>)}</ul>
+        </section>
       </>}
       {tab === "events" && <>
         <div className="admin-section-heading"><h2>Eventos</h2><button className="btn-secondary" onClick={() => setEventId(null)}>Novo evento</button></div>
         <div className="admin-editor-layout"><div className="admin-record-list">{data.events.length ? data.events.map(event => <button key={event.id} className={`panel admin-record ${eventId === event.id ? "is-selected" : ""}`} onClick={() => setEventId(event.id)}><span className="admin-badge">{event.published ? "Publicado" : "Rascunho"}</span><strong>{event.name}</strong><span>{dateLabel(event.event_date)}{event.time ? ` · ${event.time}` : ""}</span><span>{event.registrations} inscritos{event.capacity ? ` de ${event.capacity} vagas` : ""}</span></button>) : <p className="body-copy">Nenhum evento cadastrado.</p>}</div>
         <EventEditor key={eventId ?? "new"} event={data.events.find(event => event.id === eventId)} onSaved={async id => {await refresh(); setEventId(id);}} onRegistrations={registrations}/></div>
       </>}
-      {tab === "submissions" && <Registrations events={data.events} initialEvent={registrationEvent} onChanged={refresh}/>}
+      {tab === "submissions" && <Registrations key={`${registrationEvent}:${registrationKind}`} events={data.events} initialEvent={registrationEvent} initialKind={registrationKind} onChanged={refresh}/>}
       {tab === "galleries" && <>
         <div className="admin-section-heading"><h2>Fotos dos cultos e eventos</h2><button className="btn-secondary" onClick={() => setGalleryId(null)}>Novo álbum</button></div>
         <div className="admin-editor-layout"><div className="admin-record-list">{data.galleries.length ? data.galleries.map(album => <button key={album.id} className={`panel admin-record ${galleryId === album.id ? "is-selected" : ""}`} onClick={() => setGalleryId(album.id)}><span className="admin-badge">{album.published ? "Publicado" : "Rascunho"}</span><strong>{album.name}</strong><span>{album.category}{album.event_date ? ` · ${dateLabel(album.event_date)}` : ""}</span><span>{album.photos} fotos</span></button>) : <p className="body-copy">Crie um álbum para organizar as fotos por culto ou evento.</p>}</div>
@@ -98,8 +115,8 @@ function EventEditor({event, onSaved, onRegistrations}: {event?: EventRecord; on
   </form>;
 }
 
-function Registrations({events, initialEvent, onChanged}: {events: EventRecord[]; initialEvent: string; onChanged: () => Promise<void>}) {
-  const [filters,setFilters] = useState({kind:"",event:initialEvent,search:"",page:1});
+function Registrations({events, initialEvent, initialKind, onChanged}: {events: EventRecord[]; initialEvent: string; initialKind: string; onChanged: () => Promise<void>}) {
+  const [filters,setFilters] = useState({kind:initialKind,event:initialEvent,search:"",page:1});
   const [result,setResult] = useState<{rows: SubmissionRecord[];total:number;page:number} | null>(null);
   const [error,setError] = useState("");
   const [message,setMessage] = useState("");
@@ -114,7 +131,7 @@ function Registrations({events, initialEvent, onChanged}: {events: EventRecord[]
   }, [filters,revision]);
   return <><div className="admin-section-heading"><h2>Inscrições e contatos</h2><button className="btn-secondary" onClick={() => setRevision(value=>value+1)}>Atualizar lista</button></div>
     <form className="panel admin-filters" onSubmit={e => {e.preventDefault(); const data = new FormData(e.currentTarget); setFilters({kind:String(data.get("kind")),event:String(data.get("event")),search:String(data.get("search")),page:1});}}>
-      <Field label="Assunto"><select name="kind" className="field-control"><option value="">Todos</option>{Object.entries(kindLabels).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
+      <Field label="Assunto"><select name="kind" className="field-control" defaultValue={initialKind}><option value="">Todos</option>{Object.entries(kindLabels).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
       <Field label="Evento"><select name="event" className="field-control" defaultValue={initialEvent}><option value="">Todos os eventos</option>{events.map(event => <option key={event.id} value={event.id}>{event.name}</option>)}</select></Field>
       <Field label="Buscar nome, e-mail ou telefone"><input name="search" className="field-control" maxLength={100} placeholder="Digite para buscar"/></Field><button className="btn-primary" disabled={loading}>Filtrar</button>
     </form>

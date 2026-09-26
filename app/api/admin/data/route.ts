@@ -20,14 +20,17 @@ export async function GET(request: Request) {
       exactCount(db.from("gallery_photos").select("id", {count: "exact", head: true})),
       eventsWithRegistrations(false),
       galleriesWithPhotos(false),
-      db.from("submissions").select("kind"),
+      db.from("submissions").select("kind,status"),
       siteContent(),
     ]);
     if (submissionKinds.error) throw submissionKinds.error;
-    const kindTotals = new Map<string, number>();
-    for (const row of submissionKinds.data ?? []) kindTotals.set(row.kind, (kindTotals.get(row.kind) ?? 0) + 1);
+    const kindTotals = new Map<string, {total: number; pending: number}>();
+    for (const row of submissionKinds.data ?? []) {
+      const current = kindTotals.get(row.kind) ?? {total: 0, pending: 0};
+      kindTotals.set(row.kind, {total: current.total + 1, pending: current.pending + (row.status === "novo" ? 1 : 0)});
+    }
     const kinds = [...kindTotals.entries()]
-      .map(([kind, total]) => ({kind, total}))
+      .map(([kind, counts]) => ({kind, ...counts}))
       .sort((a, b) => b.total - a.total || a.kind.localeCompare(b.kind));
     return privateJson({
       stats: {submissions, new_submissions: newSubmissions, published_events: publishedEvents, photos},
