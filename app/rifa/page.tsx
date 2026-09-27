@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SiteShell } from "../../components/SiteShell";
-import { PhoneArt } from "../../components/PhoneArt";
 import { RaffleForm } from "../../components/RaffleForm";
 import { formatDate } from "../../lib/content";
 import { RAFFLE_MAX_AMOUNT, RAFFLE_NUMBER_PRICE, RAFFLE_PACKAGES, formatMoney, formatNumber, raffleSettings, raffleStats, raffleWinner } from "../../lib/raffle";
@@ -32,17 +31,13 @@ export default async function RafflePage() {
   ];
   return <SiteShell>
     <section className="raffle-hero">
-      <div className="container-shell raffle-hero-inner">
-        <div>
-          <p className="eyebrow">Rifa solidária · Telão da igreja</p>
-          <h1 className="display-title mt-5">Concorra a um {settings.prize} e ajude a levantar o nosso telão.</h1>
-          <p className="raffle-hero-copy">Todo o valor arrecadado vai para a compra do telão da Comunidade Cristã Visão Profética, para que a Palavra, os louvores e os avisos cheguem com clareza a todos que estiverem no culto.</p>
-          <div className="raffle-hero-actions">
-            {open ? <a href="#comprar" className="btn-light">Quero meus números</a> : <span className="event-status is-closed">Vendas encerradas</span>}
-            <span>A partir de <strong>{formatMoney(RAFFLE_NUMBER_PRICE * 100)}</strong> · Sorteio em {drawDate}</span>
-          </div>
-        </div>
-        <PhoneArt className="raffle-hero-art"/>
+      <h1 className="sr-only">Rifa Visão Profética: concorra a um {settings.prize}. Cada número ajuda a instalar o novo telão da igreja.</h1>
+      <div className="raffle-hero-banner">
+        <img src="/eventos/rifa-iphone-17.webp" width={1672} height={941} fetchPriority="high" alt={`Rifa Visão Profética: concorra a um ${settings.prize}. Números a partir de R$ 5. Cada número comprado ajuda a instalar o novo telão da igreja.`}/>
+        <a href="#comprar" className="raffle-hero-hotspot" aria-label={open ? "Quero meu número" : "Ver a rifa"}/>
+      </div>
+      <div className="raffle-hero-mobile container-shell">
+        {open ? <a href="#comprar" className="raffle-cta">Quero meu número <span aria-hidden="true">→</span></a> : <span className="event-status is-closed">Vendas encerradas</span>}
       </div>
     </section>
 
