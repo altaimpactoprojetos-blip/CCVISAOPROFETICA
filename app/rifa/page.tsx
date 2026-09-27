@@ -37,7 +37,7 @@ export default async function RafflePage() {
       <div className="event-detail-main">
         {winner && <div className="panel raffle-winner" role="status"><p className="eyebrow text-zinc-500">Resultado do sorteio</p><h2>Número sorteado: <span className="font-mono">{formatNumber(winner.number)}</span></h2><p className="body-copy">Parabéns, <strong>{winner.order.name.split(/\s+/)[0]}</strong>! Loteria Federal, 1º prêmio: {settings.result}. A equipe da igreja vai entrar em contato para a entrega do {settings.prize}.</p></div>}
         {settings.result && !winner && <div className="panel raffle-winner" role="status"><p className="eyebrow text-zinc-500">Resultado do sorteio</p><h2>Loteria Federal: {settings.result}</h2><p className="body-copy">A equipe está conferindo o número vencedor e publica o resultado em breve.</p></div>}
-        <img src="/eventos/rifa-iphone-17.webp" width={1672} height={941} fetchPriority="high" className="event-cover event-detail-cover raffle-cover" alt={`Arte da rifa: concorra a um ${settings.prize}. Cada número comprado ajuda a instalar o novo telão da igreja.`}/>
+        <img src="/eventos/rifa-iphone-17-hd.webp" width={1672} height={941} fetchPriority="high" className="event-cover event-detail-cover raffle-cover" alt={`Arte da rifa: concorra a um ${settings.prize}. Cada número comprado ajuda a instalar o novo telão da igreja.`}/>
         {open && <a href="#comprar" className="raffle-cta raffle-jump">Quero meu número <span aria-hidden="true">↓</span></a>}
         <dl className="event-facts">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
 
