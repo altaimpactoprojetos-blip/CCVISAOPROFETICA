@@ -27,7 +27,7 @@ export default async function RafflePage() {
   const steps = [
     ["Escolha o valor", `Cada número custa ${formatMoney(RAFFLE_NUMBER_PRICE * 100)}. Escolha um pacote ou coloque o seu valor.`],
     ["Pague com Pix", "Na tela seguinte aparecem o QR code e o Pix copia e cola já com o valor certo."],
-    ["Envie o comprovante", "Mande o comprovante pelo WhatsApp da igreja. Quando o pagamento é confirmado, seus números passam a valer."],
+    ["Envie o comprovante", "Envie a foto ou o PDF do comprovante na própria página do pedido. Quando o pagamento é confirmado, seus números passam a valer."],
     ["Acompanhe o sorteio", settings.draw_date ? `O resultado sai pela Loteria Federal de ${drawDate}.` : `Ao atingir a meta de ${goal}, divulgamos a data do sorteio pela Loteria Federal.`],
   ];
   const details = [["Número", `${formatMoney(RAFFLE_NUMBER_PRICE * 100)} cada`], ["Sorteio", settings.draw_date ? `Loteria Federal, ${drawDate}` : "Loteria Federal, data a divulgar"], ["Meta", goal]];

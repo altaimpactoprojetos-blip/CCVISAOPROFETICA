@@ -57,7 +57,7 @@ export async function sendRaffleEmail(order: RaffleOrder, url: string, prize: st
   const paid = kind === "pago";
   const numbers = order.numbers.map(formatNumber).join(", ");
   const title = paid ? "Pagamento confirmado" : "Números reservados";
-  const intro = paid ? "Recebemos o seu pagamento. Seus números já estão valendo no sorteio. Boa sorte e obrigado por ajudar a construir o telão da igreja!" : "Seus números estão reservados. Para garantir a participação, faça o Pix pelo link abaixo e envie o comprovante pelo WhatsApp da igreja.";
+  const intro = paid ? "Recebemos o seu pagamento. Seus números já estão valendo no sorteio. Boa sorte e obrigado por ajudar a construir o telão da igreja!" : "Seus números estão reservados. Para garantir a participação, faça o Pix pelo link abaixo e envie o comprovante na mesma página.";
   const html = `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#f4f5f7;font-family:Inter,Segoe UI,Arial,sans-serif;color:#17191c">
 <div style="max-width:560px;margin:0 auto;padding:32px 16px">
   <div style="background:#fff;border:1px solid #e3e6ea;border-radius:16px;padding:32px">

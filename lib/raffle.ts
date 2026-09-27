@@ -48,6 +48,9 @@ export type RaffleOrder = {
   status: "pendente" | "pago" | "cancelado" | "expirado";
   created_at: string;
   paid_at: string | null;
+  receipt_key: string | null;
+  receipt_type: string | null;
+  receipt_uploaded_at: string | null;
   numbers: number[];
 };
 
@@ -115,7 +118,9 @@ export async function raffleOrderById(id: number) {
 
 export async function raffleOrders({status, search, page}: {status: string; search: string; page: number}) {
   let query = database().from("raffle_orders").select("*", {count: "exact"});
-  if (status) query = query.eq("status", status);
+  // "comprovante": pedidos ainda não pagos com comprovante enviado, esperando conferência.
+  if (status === "comprovante") query = query.in("status", ["pendente", "expirado"]).not("receipt_key", "is", null);
+  else if (status) query = query.eq("status", status);
   if (search) {
     const term = search.slice(0, 100).replace(/[\\%_,()]/g, "");
     const digits = term.replace(/\D/g, "");
