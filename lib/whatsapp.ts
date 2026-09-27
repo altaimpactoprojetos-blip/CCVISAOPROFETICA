@@ -14,16 +14,18 @@ export function whatsappLink(value: string, text?: string) {
   return `https://wa.me/${number}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 }
 
-// No Android, abre direto no WhatsApp comum (Messenger) em vez do WhatsApp Business.
-// Se o WhatsApp comum não estiver instalado, o Chrome segue para o link wa.me.
+// No Android dá para escolher o app: WhatsApp comum ou WhatsApp Business.
+// Se o app escolhido não estiver instalado, o Chrome segue para o link wa.me.
 // Navegadores embutidos (WebView, Instagram, Facebook) não tratam intent://, então ficam no wa.me.
 export function opensWhatsappIntent(userAgent: string) {
   return /Android/i.test(userAgent) && !/; wv\)|Instagram|FBAN|FBAV/i.test(userAgent);
 }
 
-export function whatsappMessengerLink(value: string, text?: string) {
+export const whatsappApps = {messenger: "com.whatsapp", business: "com.whatsapp.w4b"} as const;
+
+export function whatsappAppLink(value: string, app: keyof typeof whatsappApps, text?: string) {
   const fallback = whatsappLink(value, text);
   if (!fallback) return "";
   const query = `phone=${whatsappNumber(value)}${text ? `&text=${encodeURIComponent(text)}` : ""}`;
-  return `intent://send?${query}#Intent;scheme=whatsapp;package=com.whatsapp;S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
+  return `intent://send?${query}#Intent;scheme=whatsapp;package=${whatsappApps[app]};S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
 }
