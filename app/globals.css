@@ -395,3 +395,4 @@ main .page-hero .text-zinc-400, main .bg-black .eyebrow, main .next-steps .text-
 @media (max-width: 1000px) { .raffle-hero-inner, .raffle-layout { grid-template-columns: 1fr; } .raffle-hero-art { max-width: 300px; } .raffle-aside { position: static; } }
 @media (max-width: 640px) { .raffle-banner { grid-template-columns: 1fr; } .raffle-banner-art { display: none; } .raffle-banner .btn-light { width: 100%; } .raffle-hero-art { max-width: 220px; } .raffle-hero-actions .btn-light { width: 100%; } }
 @media print { .raffle-pay .btn-primary, .raffle-pix-copy button { display: none !important; } }
+.admin-raffle-thumb { display: grid !important; place-items: center; background: radial-gradient(circle at 70% 40%, #3a3b3f, #111316) !important; color: #fff; font-size: 1.75rem; font-weight: 800; letter-spacing: -.02em; }

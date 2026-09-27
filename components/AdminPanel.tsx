@@ -71,6 +71,7 @@ export function AdminPanel() {
             <div className="admin-event-actions"><button className="btn-secondary" onClick={() => registrations(event.id)}>Ver inscritos</button><button className="admin-text-button" onClick={() => {setEventId(event.id); setTab("events"); revealOnPhone("admin-editor");}}>Editar</button></div>
           </li>;})}</ul> : <p className="body-copy mt-4">Cadastre o primeiro evento, adicione a arte e abra as inscrições quando estiver pronto.</p>}
         </section>
+        <RaffleOverview onOpen={() => {setTab("rifa"); revealOnPhone("admin-workspace");}}/>
         <section className="panel admin-overview-block"><div className="admin-block-heading"><div><h3>Formulários do site</h3><p>Pessoas que preencheram os formulários das páginas do site (fora dos eventos).</p></div><button className="btn-secondary" onClick={() => submissionsOf("", "")}>Ver todos os cadastros</button></div>
           <ul className="admin-form-list">{formKinds.map(row => <li key={row.kind}><button type="button" onClick={() => submissionsOf("", row.kind)} disabled={!row.total}><span className="admin-form-name"><strong>{kindLabels[row.kind] || row.kind}</strong><span>{kindSources[row.kind] || "Formulário do site"}</span></span>{row.pending > 0 && <span className="admin-tag is-attention">{row.pending} novo(s)</span>}<strong className="admin-form-total">{row.total}</strong></button></li>)}</ul>
         </section>
@@ -284,4 +285,21 @@ function RaffleAdmin() {
       <button disabled={busy !== null} className="btn-primary mt-6">Salvar configuração</button>
     </form>
   </>;
+}
+
+function RaffleOverview({onOpen}: {onOpen: () => void}) {
+  const [data, setData] = useState<RaffleData | null>(null);
+  useEffect(() => { api<RaffleData>("rifa?status=pendente").then(setData).catch(() => setData(null)); }, []);
+  const settings = data?.settings;
+  const live = Boolean(settings?.published);
+  const selling = live && Boolean(settings?.open) && !settings?.result;
+  return <section className="panel admin-overview-block"><div className="admin-block-heading"><div><h3>Rifa do {settings?.prize ?? "iPhone 17"}</h3><p>Arrecadação para o telão da igreja. Confirme aqui os pagamentos Pix.</p></div><button className="btn-primary" onClick={onOpen}>{live ? "Abrir a rifa" : "Configurar e ativar a rifa"}</button></div>
+    <ul className="admin-event-list"><li>
+      <span className="admin-event-thumb admin-raffle-thumb" aria-hidden="true">17</span>
+      <div className="admin-event-info"><strong>Rifa solidária · {settings?.prize ?? "iPhone 17"}</strong><span>{settings?.draw_date ? `Sorteio em ${dateLabel(settings.draw_date)}` : "Data do sorteio a definir"} · meta de {money((settings?.goal ?? 80000) * 100)}</span><div className="admin-event-tags"><span className={`admin-tag ${live ? "is-positive" : "is-attention"}`}>{live ? "No site" : "Oculta do site"}</span><span className={`admin-tag ${selling ? "is-positive" : ""}`}>{selling ? "Vendas abertas" : "Vendas fechadas"}</span>{data && data.stats.pending_orders > 0 && <span className="admin-tag is-attention">{data.stats.pending_orders} aguardando pagamento</span>}</div></div>
+      <div className="admin-event-count"><strong>{data ? money(data.stats.paid_cents) : "—"}</strong><span>arrecadado</span></div>
+      <div className="admin-event-actions">{live && <a className="btn-secondary" href="/rifa" target="_blank" rel="noreferrer">Ver no site</a>}</div>
+    </li></ul>
+    {!live && <p className="body-copy mt-4">A rifa está pronta, mas ainda não aparece no site. Clique em &quot;Configurar e ativar a rifa&quot;, marque &quot;Mostrar a rifa no site&quot; e &quot;Vendas abertas&quot; e salve.</p>}
+  </section>;
 }
