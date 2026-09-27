@@ -63,6 +63,7 @@ export default async function RaffleOrderPage({params}: {params: Promise<{code: 
               <CopyPix code={pix}/>
               <p className="text-sm text-zinc-600">Chave Pix: <strong className="break-all">{settings.pix_key}</strong><br/>{settings.pix_name}</p>
             </> : <p className="ticket-email-notice">A chave Pix ainda não foi cadastrada. Fale com a igreja pelo WhatsApp para fazer o pagamento.</p>}
+            {receiptLink && <p className="raffle-receipt-note"><strong>Depois de pagar, envie o comprovante pelo WhatsApp para confirmarmos o pagamento e validarmos seus números.</strong></p>}
             {receiptLink && (receiptIntent ? <div className="raffle-whatsapp-choice">
               <a className="btn-primary raffle-whatsapp" href={whatsappAppLink(receiptPhone, "messenger", receiptMessage)}>Enviar comprovante pelo WhatsApp</a>
               <a className="btn-primary raffle-whatsapp" href={whatsappAppLink(receiptPhone, "business", receiptMessage)}>Enviar comprovante pelo WhatsApp Business</a>
