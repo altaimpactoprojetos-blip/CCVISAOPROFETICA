@@ -201,6 +201,7 @@ type RaffleData = {settings: RaffleSettings; stats: RaffleStats; orders: {rows: 
 const money = (cents: number) => (cents / 100).toLocaleString("pt-BR", {style: "currency", currency: "BRL"});
 const raffleNumber = (value: number) => String(value).padStart(5, "0");
 const raffleStatus: Record<string, string> = {pendente: "Aguardando pagamento", pago: "Pago", cancelado: "Cancelado", expirado: "Prazo expirado"};
+const raffleFilters: Record<string, string> = {comprovante: "Comprovante enviado (a conferir)", ...raffleStatus};
 
 function RaffleAdmin() {
   const [filters, setFilters] = useState({status: "pendente", search: "", page: 1});
@@ -236,13 +237,13 @@ function RaffleAdmin() {
   const {settings, stats, orders, winner} = data;
   const progress = settings.goal ? Math.min(100, stats.paid_cents / (settings.goal * 100) * 100) : 0;
   return <>
-    <div className="admin-section-heading"><div><h2>Rifa do {settings.prize}</h2><p className="admin-subtitle">Arrecadação para o telão. Confirme os pagamentos Pix conforme os comprovantes chegarem.</p></div><div className="flex flex-wrap gap-3">{settings.published && <a className="btn-secondary" href="/rifa" target="_blank" rel="noreferrer">Ver página da rifa</a>}<button className="btn-secondary" onClick={() => setRevision(value => value + 1)}>Atualizar</button></div></div>
+    <div className="admin-section-heading"><div><h2>Rifa do {settings.prize}</h2><p className="admin-subtitle">Arrecadação para o telão. Confira os comprovantes enviados pelos compradores e confirme os pagamentos.</p></div><div className="flex flex-wrap gap-3">{settings.published && <a className="btn-secondary" href="/rifa" target="_blank" rel="noreferrer">Ver página da rifa</a>}<button className="btn-secondary" onClick={() => setRevision(value => value + 1)}>Atualizar</button></div></div>
     <Notice error={error} message={message}/>
     <div className="admin-metrics">{([["Arrecadado (pago)", money(stats.paid_cents), `${progress.toFixed(1).replace(".", ",")}% da meta de ${money(settings.goal * 100)}`], ["Aguardando pagamento", money(stats.pending_cents), `${stats.pending_orders} pedido(s)`], ["Números pagos", stats.paid_numbers.toLocaleString("pt-BR"), `${stats.paid_orders} pedido(s) pago(s)`], ["Pedidos no total", stats.orders.toLocaleString("pt-BR"), settings.open ? "Vendas abertas" : "Vendas fechadas"]] as const).map(([label, value, hint]) => <article key={label} className="panel"><p>{label}</p><strong className="admin-metric-money">{value}</strong><span>{hint}</span></article>)}</div>
     <div className="raffle-bar mt-5" aria-hidden="true"><span style={{width: `${progress}%`}}/></div>
 
     <form className="panel admin-filters mt-6" onSubmit={e => {e.preventDefault(); const form = new FormData(e.currentTarget); setFilters({status: String(form.get("status")), search: String(form.get("search")), page: 1});}}>
-      <Field label="Situação"><select name="status" className="field-control" defaultValue={filters.status}><option value="">Todos</option>{Object.entries(raffleStatus).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
+      <Field label="Situação"><select name="status" className="field-control" defaultValue={filters.status}><option value="">Todos</option>{Object.entries(raffleFilters).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
       <Field label="Buscar nome, e-mail, WhatsApp, pedido ou número"><input name="search" className="field-control" maxLength={100} placeholder="Ex.: Maria, 04217 ou código do pedido"/></Field>
       <span/><button className="btn-primary" disabled={loading}>Filtrar</button>
     </form>
@@ -251,7 +252,7 @@ function RaffleAdmin() {
       const links = contactLinks({whatsapp: order.whatsapp, email: order.email});
       return <article key={order.id} className="panel admin-submission">
         <div className="admin-submission-head flex flex-wrap justify-between gap-4"><div>
-          <span className={`admin-tag ${order.status === "pago" ? "is-positive" : order.status === "pendente" ? "is-attention" : ""}`}>{raffleStatus[order.status]}</span>
+          <span className={`admin-tag ${order.status === "pago" ? "is-positive" : order.status === "pendente" ? "is-attention" : ""}`}>{raffleStatus[order.status]}</span>{order.receipt_uploaded_at && order.status !== "pago" && order.status !== "cancelado" && <span className="admin-tag is-positive ml-2">Comprovante enviado</span>}
           <h3 className="mt-3 text-xl font-bold">{order.name}</h3>
           <p className="mt-2 text-sm text-zinc-600">Pedido <strong className="font-mono">{order.code}</strong> · <strong>{money(order.amount_cents)}</strong> · {order.quantity} número(s) · {new Date(order.created_at).toLocaleString("pt-BR", {timeZone: "America/Fortaleza"})}</p>
           <p className="mt-1 text-sm text-zinc-600">{order.email} · {order.whatsapp}</p>
@@ -261,6 +262,7 @@ function RaffleAdmin() {
           {order.status === "pago" && <button className="btn-secondary" disabled={busy !== null} onClick={() => setStatus(order, "pendente")}>Voltar para pendente</button>}
           {order.status !== "cancelado" && <button className="admin-text-button" disabled={busy !== null} onClick={() => setStatus(order, "cancelado")}>Cancelar</button>}
         </div></div>
+        {order.receipt_key && <div className="raffle-admin-receipt"><a className="btn-secondary" href={`/api/admin/rifa/comprovante/${order.id}`} target="_blank" rel="noreferrer">Ver comprovante{order.receipt_type === "application/pdf" ? " (PDF)" : ""}</a><span>Enviado em {new Date(order.receipt_uploaded_at ?? "").toLocaleString("pt-BR", {timeZone: "America/Fortaleza"})}</span></div>}
         {order.numbers.length > 0 && <p className="raffle-admin-numbers">{order.numbers.map(raffleNumber).join(" · ")}</p>}
         {(links.whatsapp || links.email) && <div className="admin-contact-actions">{links.whatsapp && <a className="is-whatsapp" href={links.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>}{links.email && <a href={links.email}>E-mail</a>}<a href={`/rifa/pedido/${order.code}`} target="_blank" rel="noreferrer">Página do pedido</a></div>}
       </article>;
@@ -274,7 +276,6 @@ function RaffleAdmin() {
         <Field label="Data da Loteria Federal do sorteio"><input name="draw_date" type="date" className="field-control" defaultValue={settings.draw_date}/></Field>
         <Field label="Prazo para pagar a reserva (horas) *"><input name="expire_hours" type="number" min={1} max={720} required className="field-control" defaultValue={settings.expire_hours}/></Field>
         <Field label="Chave Pix"><input name="pix_key" maxLength={77} className="field-control" defaultValue={settings.pix_key} placeholder="CNPJ, e-mail, +55 celular ou chave aleatória"/></Field>
-        <Field label="WhatsApp para receber comprovantes"><input name="whatsapp" type="tel" maxLength={40} className="field-control" defaultValue={settings.whatsapp} placeholder="Usa o WhatsApp do contato se vazio"/></Field>
         <Field label="Titular do Pix"><input name="pix_name" maxLength={60} className="field-control" defaultValue={settings.pix_name}/></Field>
         <Field label="Cidade do titular do Pix"><input name="pix_city" maxLength={40} className="field-control" defaultValue={settings.pix_city}/></Field>
         <Field label="Resultado: 1º prêmio da Loteria Federal (5 dígitos)" full><input name="result" inputMode="numeric" pattern="[0-9]{5}" maxLength={5} className="field-control" defaultValue={settings.result} placeholder="Preencha só depois do sorteio"/></Field>

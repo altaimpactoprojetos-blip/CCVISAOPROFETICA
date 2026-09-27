@@ -371,15 +371,20 @@ main .page-hero .text-zinc-400, main .bg-black .eyebrow, main .next-steps .text-
 .raffle-pay h3 { font-size: 1.25rem; font-weight: 800; }
 .raffle-pix-copy { display: grid; gap: 10px; width: 100%; }
 .raffle-pix-copy textarea { width: 100%; padding: 10px 12px; border: 1px solid #cdd2d8; border-radius: 8px; background: #f7f8f9; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .75rem; line-height: 1.5; word-break: break-all; resize: none; }
-.raffle-whatsapp { width: 100%; background: #1b6b3a; }
-.raffle-whatsapp:hover { background: #155a30; }
-.raffle-whatsapp-choice { display: grid; gap: 10px; width: 100%; }
+.raffle-receipt { display: grid; gap: 12px; justify-items: center; width: 100%; }
 .raffle-receipt-note { text-align: center; font-size: 1rem; line-height: 1.5; color: #1b6b3a; }
+.raffle-receipt-button { position: relative; width: 100%; background: #1b6b3a; cursor: pointer; }
+.raffle-receipt-button:hover { background: #155a30; }
+.raffle-receipt-button.is-busy { opacity: .7; cursor: progress; }
+.raffle-receipt-button input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.raffle-receipt-button:focus-within { outline: 3px solid #9fd3b0; outline-offset: 2px; }
+.raffle-receipt.is-sent { gap: 6px; padding: 14px 16px; border: 1px solid #b2d7bf; border-radius: 12px; background: #e6f6ec; color: #1b6b3a; text-align: center; font-size: .9375rem; line-height: 1.5; }
 .event-status.is-pending { background: #fff4e0; color: #8a5300; }
 .admin-metric-money { font-size: 1.75rem !important; }
 .raffle-admin-numbers { margin-top: 14px; padding: 10px 12px; border-radius: 8px; background: #f4f5f7; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .875rem; letter-spacing: .04em; overflow-wrap: anywhere; }
+.raffle-admin-receipt { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 14px; font-size: .875rem; color: #52525b; }
 .raffle-admin-winner { display: grid; gap: 4px; margin-top: 20px; padding: 14px 18px; border: 1px solid #b2d7bf; border-radius: 8px; background: #f1faf4; color: #185332; }
-@media print { .raffle-pay .btn-primary, .raffle-pix-copy button { display: none !important; } }
+@media print { .raffle-pay .btn-primary, .raffle-pix-copy button, .raffle-receipt { display: none !important; } }
 .admin-raffle-thumb { display: grid !important; place-items: center; background: radial-gradient(circle at 70% 40%, #3a3b3f, #111316) !important; color: #fff; font-size: 1.75rem; font-weight: 800; letter-spacing: -.02em; }
 
 .raffle-cta { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; width: 100%; min-height: 54px; padding: .9rem 1.4rem; border-radius: 999px; background: linear-gradient(180deg, #f3cb62, #e0a93a); color: #0b1330; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; box-shadow: 0 10px 28px -10px rgba(232,185,74,.7); }
