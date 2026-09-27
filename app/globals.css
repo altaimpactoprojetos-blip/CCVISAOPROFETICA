@@ -388,8 +388,9 @@ main .page-hero .text-zinc-400, main .bg-black .eyebrow, main .next-steps .text-
 .raffle-event-text p:not(.eyebrow) { margin-top: 12px; max-width: 560px; color: #c9d0e0; line-height: 1.7; }
 .raffle-event-text .raffle-cta { width: auto; min-height: 48px; margin-top: 22px; padding: .75rem 1.4rem; font-size: .875rem; }
 .raffle-event-art { display: none; width: 100%; height: 100%; min-height: 0; object-fit: cover; object-position: 100% center; -webkit-mask-image: linear-gradient(90deg, transparent 25%, #000 60%); mask-image: linear-gradient(90deg, transparent 25%, #000 60%); }
-@media (min-width: 721px) { .raffle-event-banner { grid-template-columns: minmax(0,1fr) 300px; } .raffle-event-art { display: block; } }
-@media (max-width: 720px) { .raffle-event-text .raffle-cta { width: 100%; } }
+.raffle-event-cover { display: block; width: 100%; height: auto; aspect-ratio: 1672/941; object-fit: cover; }
+@media (min-width: 721px) { .raffle-event-banner { grid-template-columns: minmax(0,1fr) 300px; } .raffle-event-art { display: block; } .raffle-event-cover { display: none; } }
+@media (max-width: 720px) { .raffle-event-text { padding: 20px; } .raffle-event-text > :not(.raffle-cta) { display: none; } .raffle-event-text .raffle-cta { width: 100%; margin-top: 0; } }
 .raffle-cover { aspect-ratio: 1672/941; object-fit: cover; }
 .event-detail-main .raffle-progress { margin-bottom: 0; }
 .raffle-jump { margin-top: 20px; }
