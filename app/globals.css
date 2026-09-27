@@ -399,8 +399,8 @@ main .page-hero .text-zinc-400, main .bg-black .eyebrow, main .next-steps .text-
 
 /* Arte oficial da rifa: o botão "Quero meu número" desenhado na imagem é clicável. */
 .raffle-hero { background: #070b1c; border-bottom: 1px solid #1c2440; }
-.raffle-hero-banner { position: relative; max-width: 1672px; margin-inline: auto; }
-.raffle-hero-banner img { display: block; width: 100%; height: auto; }
+.raffle-hero-banner { position: relative; max-width: 960px; margin-inline: auto; }
+.raffle-hero-banner img { display: block; width: 100%; height: auto; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 3%, #000 92%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 3%, #000 92%, transparent 100%); }
 .raffle-hero-hotspot { position: absolute; left: 22.2%; top: 81.8%; width: 23.9%; height: 9.2%; border-radius: 999px; transition: box-shadow .18s ease, background .18s ease; }
 .raffle-hero-hotspot:hover { background: rgba(255,255,255,.08); box-shadow: 0 0 0 3px rgba(232,185,74,.45); }
 .raffle-hero-hotspot:focus-visible { outline: 3px solid #e8b94a; outline-offset: 3px; }
