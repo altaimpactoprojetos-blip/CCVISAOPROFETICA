@@ -22,12 +22,13 @@ export default async function RafflePage() {
   const raised = stats.paid_cents / 100;
   const progress = settings.goal > 0 ? Math.min(100, (raised / settings.goal) * 100) : 0;
   const open = settings.open && !settings.result;
+  const goal = formatMoney(settings.goal * 100);
   const drawDate = settings.draw_date ? formatDate(settings.draw_date) : "data a confirmar";
   const steps = [
     ["Escolha o valor", `Cada número custa ${formatMoney(RAFFLE_NUMBER_PRICE * 100)}. Escolha um pacote ou coloque o seu valor.`],
     ["Pague com Pix", "Na tela seguinte aparecem o QR code e o Pix copia e cola já com o valor certo."],
     ["Envie o comprovante", "Mande o comprovante pelo WhatsApp da igreja. Quando o pagamento é confirmado, seus números passam a valer."],
-    ["Acompanhe o sorteio", `O resultado sai pela Loteria Federal de ${drawDate}.`],
+    ["Acompanhe o sorteio", settings.draw_date ? `O resultado sai pela Loteria Federal de ${drawDate}.` : `Ao atingir a meta de ${goal}, divulgamos a data do sorteio pela Loteria Federal.`],
   ];
   return <SiteShell>
     <section className="raffle-hero">
@@ -64,12 +65,15 @@ export default async function RafflePage() {
             <h2 className="raffle-heading">Como participar</h2>
             <ol className="raffle-steps">{steps.map(([title, text], index) => <li key={title}><span>{String(index + 1).padStart(2, "0")}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
 
-            <h2 className="raffle-heading mt-14">Como é feito o sorteio</h2>
+            <h2 className="raffle-heading mt-14">Como será realizado o sorteio?</h2>
             <div className="registration-about">
-              <p>Os números vão de <strong>00000</strong> a <strong>99999</strong> e são distribuídos automaticamente, sem repetição. O ganhador é definido pelo <strong>1º prêmio da Loteria Federal</strong> de {drawDate}: ganha quem tiver exatamente esse número.</p>
-              <p>Se o número sorteado não tiver sido vendido, ganha o próximo número vendido acima dele (depois do 99999, a contagem volta para o 00000). Assim sempre há um ganhador, e o resultado pode ser conferido por qualquer pessoa no site da Caixa.</p>
-              <p>Participam do sorteio apenas os números com pagamento confirmado. Reservas sem pagamento em até {settings.expire_hours} horas são liberadas automaticamente.</p>
-              <p className="registration-about-closing">Obrigado por semear neste projeto. Cada número ajuda a levantar o telão da nossa casa.</p>
+              <p>Os números vão de <strong>00000</strong> a <strong>99999</strong>, distribuídos automaticamente e sem repetição. O sorteio será realizado assim que a arrecadação atingir <strong>{goal}</strong> em pagamentos confirmados, valor necessário para viabilizar o projeto de aquisição do telão da nossa igreja.</p>
+              <p>O ganhador será definido com base no <strong>1º prêmio da Loteria Federal</strong>, em uma data a ser divulgada após a confirmação do valor arrecadado. Ganhará quem possuir o número correspondente ao resultado oficial.</p>
+              <p>Caso o número sorteado não tenha sido vendido, será considerado o próximo número vendido acima dele, seguindo a sequência até encontrar um número válido. Após o 99999, a contagem retorna ao 00000.</p>
+              <p><strong>Importante:</strong> participarão do sorteio somente os números com pagamento confirmado. Reservas não pagas em até {settings.expire_hours} horas serão canceladas automaticamente, e os números voltarão a ficar disponíveis.</p>
+              <p>A data do sorteio será divulgada oficialmente assim que a meta de {goal} estiver integralmente confirmada.</p>
+              <p className="registration-about-closing">Obrigado por fazer parte dessa missão! ❤️ Cada contribuição é uma semente para esse projeto, ajudando a nossa igreja a conquistar o telão e a ampliar o alcance da Palavra de Deus.</p>
+              <p className="registration-about-closing">Juntos, podemos transformar esse propósito em realidade!</p>
             </div>
           </div>
           <aside className="raffle-aside" id="comprar">
