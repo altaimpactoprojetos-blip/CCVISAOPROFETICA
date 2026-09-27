@@ -380,20 +380,10 @@ main .page-hero .text-zinc-400, main .bg-black .eyebrow, main .next-steps .text-
 .admin-raffle-thumb { display: grid !important; place-items: center; background: radial-gradient(circle at 70% 40%, #3a3b3f, #111316) !important; color: #fff; font-size: 1.75rem; font-weight: 800; letter-spacing: -.02em; }
 
 .raffle-cta { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; width: 100%; min-height: 54px; padding: .9rem 1.4rem; border-radius: 999px; background: linear-gradient(180deg, #f3cb62, #e0a93a); color: #0b1330; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; box-shadow: 0 10px 28px -10px rgba(232,185,74,.7); }
-.raffle-event-banner { display: grid; grid-template-columns: minmax(0,1fr); align-items: stretch; margin-bottom: 40px; border-radius: var(--radius); overflow: hidden; background: linear-gradient(90deg, #070b1c 0%, #0a1433 100%); color: #fff; box-shadow: 0 18px 40px -24px rgba(17,19,22,.55); transition: box-shadow .18s ease; }
-.raffle-event-banner:hover { box-shadow: 0 22px 48px -22px rgba(17,19,22,.7); }
-.raffle-event-text { padding: clamp(24px, 4vw, 40px); }
-.raffle-event-text .eyebrow { color: #e8b94a; }
-.raffle-event-text h2 { margin-top: 10px; font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
-.raffle-event-text p:not(.eyebrow) { margin-top: 12px; max-width: 560px; color: #c9d0e0; line-height: 1.7; }
-.raffle-event-text .raffle-cta { width: auto; min-height: 48px; margin-top: 22px; padding: .75rem 1.4rem; font-size: .875rem; }
-.raffle-event-art { display: none; width: 100%; height: 100%; min-height: 0; object-fit: cover; object-position: 100% center; -webkit-mask-image: linear-gradient(90deg, transparent 25%, #000 60%); mask-image: linear-gradient(90deg, transparent 25%, #000 60%); }
-.raffle-event-cover { display: block; width: 100%; height: auto; aspect-ratio: 1672/941; object-fit: cover; }
-@media (min-width: 721px) { .raffle-event-banner { grid-template-columns: minmax(0,1fr) 300px; } .raffle-event-art { display: block; } .raffle-event-cover { display: none; } }
-@media (max-width: 720px) { .raffle-event-text { padding: 20px; } .raffle-event-text > :not(.raffle-cta) { display: none; } .raffle-event-text .raffle-cta { width: 100%; margin-top: 0; } }
 .raffle-cover { aspect-ratio: 1672/941; object-fit: cover; }
 .event-detail-main .raffle-progress { margin-bottom: 0; }
 .raffle-jump { margin-top: 20px; }
 .raffle-jump span { font-size: 1.15em; line-height: 1; }
 .event-detail-aside { scroll-margin-top: 112px; }
 @media (min-width: 1001px) { .raffle-jump { width: auto; padding-inline: 2.2rem; } }
+.raffle-card-cover { object-fit: contain; background: #070b1c; }
