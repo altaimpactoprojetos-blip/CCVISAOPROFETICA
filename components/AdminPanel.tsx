@@ -4,6 +4,7 @@ import {useCallback, useEffect, useState, type FormEvent, type ReactNode} from "
 import type {AdminData, Contact, EventRecord, GalleryRecord, PhotoRecord, Schedule, SubmissionRecord, EmailConfig} from "../lib/admin-types";
 import {AdminPassword} from "./AdminLogin";
 import {kindLabels, kindSources, statusLabels} from "../lib/admin-types";
+import type {RaffleOrder, RaffleSettings, RaffleStats} from "../lib/raffle";
 
 async function api<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`/api/admin/${path}`, {...options, cache: "no-store"});
@@ -56,7 +57,7 @@ export function AdminPanel() {
   const formTotal = formKinds.reduce((sum, row) => sum + row.total, 0);
   return <div className="container-shell admin-layout">
     <aside className="admin-sidebar"><nav aria-label="Seções da administração">
-      {[["overview", "Visão geral"], ["events", "Eventos"], ["submissions", "Inscrições e contatos"], ["galleries", "Fotos dos cultos"], ["settings", "Programação e contato"]].map(([key,label]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => {setTab(key); revealOnPhone("admin-workspace");}}>{label}</button>)}
+      {[["overview", "Visão geral"], ["events", "Eventos"], ["submissions", "Inscrições e contatos"], ["rifa", "Rifa do iPhone"], ["galleries", "Fotos dos cultos"], ["settings", "Programação e contato"]].map(([key,label]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => {setTab(key); revealOnPhone("admin-workspace");}}>{label}</button>)}
     </nav><a href="/" className="admin-return">Ver site público</a></aside>
     <div className="admin-workspace" id="admin-workspace"><Notice error={error}/>
       {tab === "overview" && <>
@@ -85,6 +86,7 @@ export function AdminPanel() {
         <div className="admin-editor-layout"><div className="admin-record-list">{data.galleries.length ? data.galleries.map(album => <button key={album.id} className={`panel admin-record ${galleryId === album.id ? "is-selected" : ""}`} onClick={() => {setGalleryId(album.id); revealOnPhone("admin-editor");}}><span className="admin-badge">{album.published ? "Publicado" : "Rascunho"}</span><strong>{album.name}</strong><span>{album.category}{album.event_date ? ` · ${dateLabel(album.event_date)}` : ""}</span><span>{album.photos} fotos</span></button>) : <p className="body-copy">Crie um álbum para organizar as fotos por culto ou evento.</p>}</div>
         <GalleryEditor key={galleryId ?? "new"} gallery={data.galleries.find(album => album.id === galleryId)} onSaved={async id => {await refresh(); setGalleryId(id);}} onUpdated={refresh}/></div>
       </>}
+      {tab === "rifa" && <RaffleAdmin/>}
       {tab === "settings" && <Settings data={data.content} onSaved={refresh}/>}
     </div>
   </div>;
@@ -191,4 +193,95 @@ function Settings({data,onSaved}:{data:{schedule:Schedule;contact:Contact;email:
   return <><div className="admin-section-heading"><h2>Programação e contato</h2></div><Notice error={error} message={message}/><form className="panel admin-editor" onSubmit={e=>{e.preventDefault();save("schedule",schedule);}}><h3 className="text-xl font-bold">Programação semanal</h3><div className="mt-6 grid gap-5">{schedule.map((row,index)=><div key={index} className="admin-schedule-row">{([['name','Nome'],['day','Dia'],['time','Horário']] as const).map(([key,label])=><Field key={key} label={label}><input required type={key==="time"?"time":"text"} maxLength={key==="name"?160:60} className="field-control" value={row[key]} onChange={e=>setSchedule(current=>current.map((item,i)=>i===index?{...item,[key]:e.target.value}:item))}/></Field>)}<button type="button" aria-label={`Remover horário ${index+1}`} className="admin-text-button" onClick={()=>setSchedule(current=>current.filter((_,i)=>i!==index))}>Remover</button></div>)}</div><div className="mt-6 flex flex-wrap gap-3"><button type="button" disabled={schedule.length>=30} className="btn-secondary" onClick={()=>setSchedule([...schedule,{name:"",day:"",time:""}])}>Adicionar horário</button><button disabled={busy} className="btn-primary">Salvar programação</button></div></form>
     <form className="panel admin-editor mt-6" onSubmit={e=>{e.preventDefault();save("contact",Object.fromEntries(new FormData(e.currentTarget)));}}><h3 className="text-xl font-bold">Informações de contato</h3><div className="mt-6 grid gap-5 sm:grid-cols-2">{([['address','Endereço','text'],['whatsapp','WhatsApp','tel'],['email','E-mail','email'],['instagram','Link do Instagram','url'],['youtube','Link do YouTube','url']] as const).map(([key,label,type])=><Field key={key} label={label} full={key==='address'}><input name={key} type={type} maxLength={300} className="field-control" defaultValue={data.contact[key]}/></Field>)}</div><button disabled={busy} className="btn-primary mt-6">Salvar contato</button></form>
     <form className="panel admin-editor mt-6" onSubmit={e=>{e.preventDefault();const form=e.currentTarget;save("email",Object.fromEntries(new FormData(form))).then(()=>form.reset());}}><h3 className="text-xl font-bold">E-mail de confirmação de inscrição</h3><p className="body-copy mt-2">Enviado pelo Brevo quando alguém se inscreve em um evento, com o link do comprovante e o QR code.</p><div className="mt-6 grid gap-5 sm:grid-cols-2"><Field label="E-mail remetente (verificado no Brevo)"><input name="sender_email" type="email" maxLength={254} className="field-control" defaultValue={data.email.sender_email}/></Field><Field label="Nome do remetente"><input name="sender_name" type="text" maxLength={120} className="field-control" defaultValue={data.email.sender_name}/></Field><Field label={data.email.has_api_key?"Chave da API do Brevo (já configurada; preencha só para trocar)":"Chave da API do Brevo"} full><input name="brevo_api_key" type="password" autoComplete="off" maxLength={200} placeholder={data.email.has_api_key?"••••••••••••":"xkeysib-..."} className="field-control"/></Field></div><button disabled={busy} className="btn-primary mt-6">Salvar e-mail</button></form><AdminPassword/></>;
+}
+
+type RaffleData = {settings: RaffleSettings; stats: RaffleStats; orders: {rows: RaffleOrder[]; total: number; page: number}; winner: {number: number; order: RaffleOrder} | null};
+const money = (cents: number) => (cents / 100).toLocaleString("pt-BR", {style: "currency", currency: "BRL"});
+const raffleNumber = (value: number) => String(value).padStart(5, "0");
+const raffleStatus: Record<string, string> = {pendente: "Aguardando pagamento", pago: "Pago", cancelado: "Cancelado", expirado: "Prazo expirado"};
+
+function RaffleAdmin() {
+  const [filters, setFilters] = useState({status: "pendente", search: "", page: 1});
+  const [data, setData] = useState<RaffleData | null>(null);
+  const [revision, setRevision] = useState(0);
+  const [loadedKey, setLoadedKey] = useState("");
+  const [busy, setBusy] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const requestKey = `${revision}:${JSON.stringify(filters)}`;
+  const loading = loadedKey !== requestKey;
+  useEffect(() => {
+    let active = true;
+    const params = new URLSearchParams({...filters, page: String(filters.page)});
+    api<RaffleData>(`rifa?${params}`).then(value => {if (active) setData(value);}).catch(error => {if (active) setError(error.message);}).finally(() => {if (active) setLoadedKey(requestKey);});
+    return () => {active = false;};
+  }, [filters, requestKey]);
+  async function setStatus(order: RaffleOrder, status: string) {
+    if (status === "cancelado" && !window.confirm(`Cancelar o pedido ${order.code}? Os números voltam a ficar livres.`)) return;
+    setBusy(order.id); setError(""); setMessage("");
+    try { await api("rifa", json({id: order.id, status}, "PATCH")); setMessage(status === "pago" ? `Pagamento de ${order.name} confirmado. Enviamos o e-mail com os números.` : `Pedido ${order.code} atualizado.`); setRevision(value => value + 1); }
+    catch (error) { setError((error as Error).message); } finally { setBusy(null); }
+  }
+  async function save(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault(); setError(""); setMessage(""); setBusy(0);
+    const values = new FormData(e.currentTarget);
+    try {
+      await api("rifa", json({...Object.fromEntries(values), goal: Number(values.get("goal")), expire_hours: Number(values.get("expire_hours")), published: values.get("published") === "on", open: values.get("open") === "on"}));
+      setMessage("Configuração da rifa salva."); setRevision(value => value + 1);
+    } catch (error) { setError((error as Error).message); } finally { setBusy(null); }
+  }
+  if (!data) return <div className="panel p-8"><p role="status">{error || "Carregando a rifa…"}</p></div>;
+  const {settings, stats, orders, winner} = data;
+  const progress = settings.goal ? Math.min(100, stats.paid_cents / (settings.goal * 100) * 100) : 0;
+  return <>
+    <div className="admin-section-heading"><div><h2>Rifa do {settings.prize}</h2><p className="admin-subtitle">Arrecadação para o telão. Confirme os pagamentos Pix conforme os comprovantes chegarem.</p></div><div className="flex flex-wrap gap-3">{settings.published && <a className="btn-secondary" href="/rifa" target="_blank" rel="noreferrer">Ver página da rifa</a>}<button className="btn-secondary" onClick={() => setRevision(value => value + 1)}>Atualizar</button></div></div>
+    <Notice error={error} message={message}/>
+    <div className="admin-metrics">{([["Arrecadado (pago)", money(stats.paid_cents), `${progress.toFixed(1).replace(".", ",")}% da meta de ${money(settings.goal * 100)}`], ["Aguardando pagamento", money(stats.pending_cents), `${stats.pending_orders} pedido(s)`], ["Números pagos", stats.paid_numbers.toLocaleString("pt-BR"), `${stats.paid_orders} pedido(s) pago(s)`], ["Pedidos no total", stats.orders.toLocaleString("pt-BR"), settings.open ? "Vendas abertas" : "Vendas fechadas"]] as const).map(([label, value, hint]) => <article key={label} className="panel"><p>{label}</p><strong className="admin-metric-money">{value}</strong><span>{hint}</span></article>)}</div>
+    <div className="raffle-bar mt-5" aria-hidden="true"><span style={{width: `${progress}%`}}/></div>
+
+    <form className="panel admin-filters mt-6" onSubmit={e => {e.preventDefault(); const form = new FormData(e.currentTarget); setFilters({status: String(form.get("status")), search: String(form.get("search")), page: 1});}}>
+      <Field label="Situação"><select name="status" className="field-control" defaultValue={filters.status}><option value="">Todos</option>{Object.entries(raffleStatus).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
+      <Field label="Buscar nome, e-mail, WhatsApp, pedido ou número"><input name="search" className="field-control" maxLength={100} placeholder="Ex.: Maria, 04217 ou código do pedido"/></Field>
+      <span/><button className="btn-primary" disabled={loading}>Filtrar</button>
+    </form>
+    <p className="my-5 text-sm text-zinc-600" role="status">{loading ? "Atualizando pedidos…" : `${orders.total} pedido(s) encontrado(s)`}</p>
+    <div className="admin-submissions">{!loading && orders.rows.length === 0 && <div className="panel p-8"><p>Nenhum pedido para estes filtros.</p></div>}{orders.rows.map(order => {
+      const links = contactLinks({whatsapp: order.whatsapp, email: order.email});
+      return <article key={order.id} className="panel admin-submission">
+        <div className="admin-submission-head flex flex-wrap justify-between gap-4"><div>
+          <span className={`admin-tag ${order.status === "pago" ? "is-positive" : order.status === "pendente" ? "is-attention" : ""}`}>{raffleStatus[order.status]}</span>
+          <h3 className="mt-3 text-xl font-bold">{order.name}</h3>
+          <p className="mt-2 text-sm text-zinc-600">Pedido <strong className="font-mono">{order.code}</strong> · <strong>{money(order.amount_cents)}</strong> · {order.quantity} número(s) · {new Date(order.created_at).toLocaleString("pt-BR", {timeZone: "America/Fortaleza"})}</p>
+          <p className="mt-1 text-sm text-zinc-600">{order.email} · {order.whatsapp}</p>
+        </div>
+        <div className="flex flex-wrap items-start gap-2">
+          {order.status !== "pago" && <button className="btn-primary" disabled={busy !== null} onClick={() => setStatus(order, "pago")}>Confirmar pagamento</button>}
+          {order.status === "pago" && <button className="btn-secondary" disabled={busy !== null} onClick={() => setStatus(order, "pendente")}>Voltar para pendente</button>}
+          {order.status !== "cancelado" && <button className="admin-text-button" disabled={busy !== null} onClick={() => setStatus(order, "cancelado")}>Cancelar</button>}
+        </div></div>
+        {order.numbers.length > 0 && <p className="raffle-admin-numbers">{order.numbers.map(raffleNumber).join(" · ")}</p>}
+        {(links.whatsapp || links.email) && <div className="admin-contact-actions">{links.whatsapp && <a className="is-whatsapp" href={links.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>}{links.email && <a href={links.email}>E-mail</a>}<a href={`/rifa/pedido/${order.code}`} target="_blank" rel="noreferrer">Página do pedido</a></div>}
+      </article>;
+    })}</div>
+    {orders.total > 30 && <div className="mt-6 flex flex-wrap items-center gap-4"><button className="btn-secondary" disabled={filters.page <= 1 || loading} onClick={() => setFilters({...filters, page: filters.page - 1})}>Anterior</button><span>Página {orders.page} de {Math.ceil(orders.total / 30)}</span><button className="btn-secondary" disabled={filters.page * 30 >= orders.total || loading} onClick={() => setFilters({...filters, page: filters.page + 1})}>Próxima</button></div>}
+
+    <form key={JSON.stringify(settings)} onSubmit={save} className="panel admin-editor mt-8"><h3 className="text-xl font-bold">Configuração da rifa</h3>
+      <div className="mt-6 grid gap-5 sm:grid-cols-2">
+        <Field label="Prêmio *"><input name="prize" required maxLength={80} className="field-control" defaultValue={settings.prize}/></Field>
+        <Field label="Meta de arrecadação (R$) *"><input name="goal" type="number" min={1} required className="field-control" defaultValue={settings.goal}/></Field>
+        <Field label="Data da Loteria Federal do sorteio"><input name="draw_date" type="date" className="field-control" defaultValue={settings.draw_date}/></Field>
+        <Field label="Prazo para pagar a reserva (horas) *"><input name="expire_hours" type="number" min={1} max={720} required className="field-control" defaultValue={settings.expire_hours}/></Field>
+        <Field label="Chave Pix"><input name="pix_key" maxLength={77} className="field-control" defaultValue={settings.pix_key} placeholder="CNPJ, e-mail, +55 celular ou chave aleatória"/></Field>
+        <Field label="WhatsApp para receber comprovantes"><input name="whatsapp" type="tel" maxLength={40} className="field-control" defaultValue={settings.whatsapp} placeholder="Usa o WhatsApp do contato se vazio"/></Field>
+        <Field label="Titular do Pix"><input name="pix_name" maxLength={60} className="field-control" defaultValue={settings.pix_name}/></Field>
+        <Field label="Cidade do titular do Pix"><input name="pix_city" maxLength={40} className="field-control" defaultValue={settings.pix_city}/></Field>
+        <Field label="Resultado: 1º prêmio da Loteria Federal (5 dígitos)" full><input name="result" inputMode="numeric" pattern="[0-9]{5}" maxLength={5} className="field-control" defaultValue={settings.result} placeholder="Preencha só depois do sorteio"/></Field>
+      </div>
+      {winner ? <div className="raffle-admin-winner"><strong>Ganhador: número {raffleNumber(winner.number)}</strong><span>{winner.order.name} · {winner.order.whatsapp} · {winner.order.email} · pedido {winner.order.code}</span></div> : settings.result ? <p className="admin-notice admin-error">Nenhum número pago encontrado para apurar o ganhador.</p> : null}
+      <label className="admin-checkbox mt-6"><input name="published" type="checkbox" defaultChecked={settings.published}/><span>Mostrar a rifa no site (página /rifa e destaque em Eventos)</span></label>
+      <label className="admin-checkbox mt-3"><input name="open" type="checkbox" defaultChecked={settings.open}/><span>Vendas abertas</span></label>
+      <p className="mt-2 text-sm text-zinc-600">Ao informar o resultado, as vendas fecham e o número vencedor aparece na página da rifa: é o número igual ao 1º prêmio ou, se ele não foi vendido, o próximo número pago acima dele.</p>
+      <button disabled={busy !== null} className="btn-primary mt-6">Salvar configuração</button>
+    </form>
+  </>;
 }

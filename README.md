@@ -42,6 +42,17 @@ O perfil scrypt segue a alternativa de 16 MiB da [orientação OWASP](https://ch
 
 Os formulários anteriores continuam na tabela `submissions`. Inscrições antigas sem vínculo explícito com evento ficam disponíveis pelos filtros de assunto e busca; o projeto não inventa vínculos retroativos. A reserva de vagas usa uma função transacional do Postgres para manter a mesma proteção contra concorrência.
 
+## Rifa solidária (iPhone 17)
+
+`/rifa` vende números para arrecadar o valor do telão da igreja (meta padrão de R$ 80.000). Cada número custa R$ 5. Há pacotes de R$ 5, 10, 15, 20 e 50, e a pessoa também pode digitar outro valor múltiplo de R$ 5, até R$ 1.000. Os números vão de 00000 a 99999 e são distribuídos aleatoriamente, sem repetição (`raffle_numbers` tem o número como chave primária).
+
+- O pedido fica pendente e mostra o Pix copia e cola e o QR code com o valor exato (BR Code estático gerado em `lib/raffle.ts`), além do botão para enviar o comprovante pelo WhatsApp.
+- No painel, aba **Rifa do iPhone**: confirmar pagamento, cancelar e buscar por nome, e-mail, WhatsApp, código do pedido ou número. A confirmação envia um e-mail pelo Brevo.
+- Reservas não pagas no prazo (48 h por padrão) expiram e liberam os números. Confirmar um pedido expirado gera números novos.
+- Sorteio pela Loteria Federal: o admin informa o 1º prêmio. Ganha esse número ou, se ele não foi vendido, o próximo número **pago** acima dele, voltando ao 00000 depois do 99999.
+- A rifa só aparece no site depois de marcar **Mostrar a rifa no site**. Também aparece em destaque no topo de `/eventos`.
+- A origem de rede pode fazer até 20 pedidos por hora.
+
 ## Fotos
 
 Use JPG, PNG ou WebP de até 8 MB. A arte do evento pode ter 1600 × 900 px. Os bytes são armazenados no bucket privado do Supabase Storage e os metadados no Postgres. A assinatura do arquivo é validada; SVG não é aceito em uploads. Fotos e capas de rascunhos só podem ser visualizadas por administradores. Retirar a publicação também impede novos acessos públicos ao arquivo. Remover uma foto do álbum retira sua referência; o objeto original não é apagado automaticamente do armazenamento.
