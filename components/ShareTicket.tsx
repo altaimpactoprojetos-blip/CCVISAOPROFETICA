@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { copyText } from "../lib/copy";
 export function ShareTicket({url, eventName, when}: {url: string; eventName: string; when: string}) {
   const [copied, setCopied] = useState(false);
   const message = `Minha inscrição está confirmada: ${eventName}, ${when}. Comprovante: ${url}`;
@@ -10,7 +11,7 @@ export function ShareTicket({url, eventName, when}: {url: string; eventName: str
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener");
   }
   async function copy() {
-    try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { window.prompt("Copie o link:", url); }
+    if (await copyText(url)) { setCopied(true); setTimeout(() => setCopied(false), 2000); } else window.prompt("Copie o link:", url);
   }
   return <div className="ticket-actions">
     <button type="button" className="btn-primary" onClick={share}>Compartilhar</button>

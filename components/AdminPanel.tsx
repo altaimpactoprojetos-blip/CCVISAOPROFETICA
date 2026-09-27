@@ -3,6 +3,7 @@
 import {useCallback, useEffect, useState, type FormEvent, type ReactNode} from "react";
 import type {AdminData, Contact, EventRecord, GalleryRecord, PhotoRecord, Schedule, SubmissionRecord, EmailConfig} from "../lib/admin-types";
 import {AdminPassword} from "./AdminLogin";
+import {whatsappLink} from "../lib/whatsapp";
 import {kindLabels, kindSources, statusLabels} from "../lib/admin-types";
 import type {RaffleOrder, RaffleSettings, RaffleStats} from "../lib/raffle";
 
@@ -25,7 +26,7 @@ function revealOnPhone(id: string) { if (isPhone()) requestAnimationFrame(() => 
 function contactLinks(payload: Record<string,string>) {
   const phone = String(payload.whatsapp || payload.telefone || payload.celular || "").replace(/\D/g, "");
   const full = phone.length === 10 || phone.length === 11 ? `55${phone}` : phone;
-  return {whatsapp: full.length >= 12 ? `https://wa.me/${full}` : "", phone: phone.length >= 8 ? `tel:+${full}` : "", email: payload.email ? `mailto:${payload.email}` : ""};
+  return {whatsapp: whatsappLink(phone), phone: phone.length >= 8 ? `tel:+${full}` : "", email: payload.email ? `mailto:${payload.email}` : ""};
 }
 const dateLabel = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR");
 

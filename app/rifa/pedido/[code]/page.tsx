@@ -6,6 +6,7 @@ import { PageHero } from "../../../../components/PageHero";
 import { CopyPix, ShareRaffle } from "../../../../components/RafflePayment";
 import { formatDate, siteContent } from "../../../../lib/content";
 import { ticketCodePattern } from "../../../../lib/tickets";
+import { whatsappLink } from "../../../../lib/whatsapp";
 import { formatMoney, formatNumber, pixPayload, pixQrSvg, raffleOrderByCode, raffleSettings, raffleStatusLabels, raffleUrl } from "../../../../lib/raffle";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {title: "Meus números da rifa", robots: {index: false, follow: false}};
@@ -30,9 +31,8 @@ export default async function RaffleOrderPage({params}: {params: Promise<{code: 
   const pending = order.status === "pendente";
   const pix = pending && settings.pix_key ? pixPayload({key: settings.pix_key, name: settings.pix_name, city: settings.pix_city, amountCents: order.amount_cents, txid: order.code}) : "";
   const qr = pix ? await pixQrSvg(pix) : "";
-  const phone = (settings.whatsapp || contactWhatsapp).replace(/\D/g, "");
-  const whatsappNumber = phone.length === 10 || phone.length === 11 ? `55${phone}` : phone;
   const receiptMessage = `Olá! Segue o comprovante do Pix da rifa do ${settings.prize}. Pedido ${order.code}, ${formatMoney(order.amount_cents)}, em nome de ${order.name}.`;
+  const receiptLink = whatsappLink(settings.whatsapp || contactWhatsapp, receiptMessage);
   const deadline = new Date(new Date(order.created_at).getTime() + settings.expire_hours * 3600 * 1000).toLocaleString("pt-BR", {timeZone: "America/Fortaleza", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
   const statusClass = order.status === "pago" ? "is-open" : order.status === "pendente" ? "is-pending" : "is-closed";
   return <SiteShell>
@@ -61,7 +61,7 @@ export default async function RaffleOrderPage({params}: {params: Promise<{code: 
               <CopyPix code={pix}/>
               <p className="text-sm text-zinc-600">Chave Pix: <strong className="break-all">{settings.pix_key}</strong><br/>{settings.pix_name}</p>
             </> : <p className="ticket-email-notice">A chave Pix ainda não foi cadastrada. Fale com a igreja pelo WhatsApp para fazer o pagamento.</p>}
-            {whatsappNumber.length >= 12 && <a className="btn-primary raffle-whatsapp" href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(receiptMessage)}`} target="_blank" rel="noreferrer">Enviar comprovante pelo WhatsApp</a>}
+            {receiptLink && <a className="btn-primary raffle-whatsapp" href={receiptLink} target="_blank" rel="noreferrer">Enviar comprovante pelo WhatsApp</a>}
             <p className="text-xs leading-5 text-zinc-500">Quando a equipe confirmar o pagamento, esta página muda para &quot;Pago&quot; e você recebe um e-mail.</p>
           </div>}
           {order.status === "pago" && <p className="body-copy text-sm">Pagamento confirmado. Obrigado por ajudar a comprar o telão da igreja! O resultado sai pela Loteria Federal{settings.draw_date ? ` de ${formatDate(settings.draw_date)}` : ""} e será publicado na página da rifa.</p>}
