@@ -386,4 +386,3 @@ main .page-hero .text-zinc-400, main .bg-black .eyebrow, main .next-steps .text-
 .raffle-jump span { font-size: 1.15em; line-height: 1; }
 .event-detail-aside { scroll-margin-top: 112px; }
 @media (min-width: 1001px) { .raffle-jump { width: auto; padding-inline: 2.2rem; } }
-.raffle-card-cover { object-fit: contain; background: #070b1c; }
