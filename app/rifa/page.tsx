@@ -37,7 +37,7 @@ export default async function RafflePage() {
         <a href="#comprar" className="raffle-hero-hotspot" aria-label={open ? "Quero meu número" : "Ver a rifa"}/>
       </div>
       <div className="raffle-hero-mobile container-shell">
-        {open ? <a href="#comprar" className="raffle-cta">Quero meu número <span aria-hidden="true">→</span></a> : <span className="event-status is-closed">Vendas encerradas</span>}
+        {open ? <a href="#comprar" className="raffle-cta">Quero meu número</a> : <span className="event-status is-closed">Vendas encerradas</span>}
       </div>
     </section>
 
