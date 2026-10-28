@@ -7,13 +7,15 @@ jobs:
   check:
     name: Inspect what each address serves
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
+      - uses: actions/checkout@v4
       - name: Browser probe
         run: |
-          npm i --no-save playwright@1.48.2 >/dev/null 2>&1
-          npx playwright install --with-deps chromium >/dev/null 2>&1
-          node .github/diag/probe.mjs
+          mkdir -p /tmp/p && cp .github/diag/probe.mjs /tmp/p/ && cd /tmp/p && npm init -y >/dev/null
+          npm i playwright@1.48.2 > npm.log 2>&1 || echo "::notice::npm falhou $(tail -5 npm.log | tr '\n' ' ')"
+          npx playwright install --with-deps chromium > pw.log 2>&1 || echo "::notice::install falhou $(tail -5 pw.log | tr '\n' ' ')"
+          node probe.mjs 2> err.log || echo "::notice::probe falhou $(tail -20 err.log | tr '\n' ' ')"
       - name: DNS
         run: |
           for host in ccvisaoprofetica.online www.ccvisaoprofetica.online; do
