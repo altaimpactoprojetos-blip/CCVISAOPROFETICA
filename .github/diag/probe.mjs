@@ -28,3 +28,14 @@ for (const href of links) {
   note(`${href} logs: ${logs.join(" || ") || "nenhum"}`);
 }
 await browser.close();
+const api = async (label, body) => {
+  const r = await fetch(`${base}/api/submissions`, { method: "POST", headers: { "content-type": "application/json", origin: base }, body: JSON.stringify(body) });
+  note(`${label}: http=${r.status} ${(await r.text()).slice(0, 500)}`);
+};
+await api("evento inexistente", { kind: "evento", eventId: 999999, payload: { nome: "Teste Diagnostico", email: "teste@example.com", whatsapp: "85900000000" } });
+await api("evento invalido", { kind: "evento", eventId: 0, payload: { nome: "x" } });
+for (const path of ["/inscricao/AAAAAAAAAA", "/inscricao/abc"]) {
+  const r = await fetch(base + path);
+  const t = await r.text();
+  note(`${path}: http=${r.status} ${t.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 400)}`);
+}
