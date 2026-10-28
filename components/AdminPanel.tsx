@@ -6,6 +6,7 @@ import {AdminPassword} from "./AdminLogin";
 import {whatsappLink} from "../lib/whatsapp";
 import {kindLabels, kindSources, statusLabels} from "../lib/admin-types";
 import type {RaffleOrder, RaffleSettings, RaffleStats} from "../lib/raffle";
+import {reminderWhatsapp} from "../lib/reminder";
 
 async function api<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`/api/admin/${path}`, {...options, cache: "no-store"});
@@ -37,6 +38,7 @@ export function AdminPanel() {
   const [eventId, setEventId] = useState<number | null>(null);
   const [galleryId, setGalleryId] = useState<number | null>(null);
   const [registrationEvent, setRegistrationEvent] = useState("");
+  const [reminderEvent, setReminderEvent] = useState<number | null>(null);
   const refresh = useCallback(async () => {
     const result = await api<AdminData>("data"); setData(result); setError("");
   }, []);
@@ -58,7 +60,7 @@ export function AdminPanel() {
   const formTotal = formKinds.reduce((sum, row) => sum + row.total, 0);
   return <div className="container-shell admin-layout">
     <aside className="admin-sidebar"><nav aria-label="Seções da administração">
-      {[["overview", "Visão geral"], ["events", "Eventos"], ["submissions", "Inscrições e contatos"], ["rifa", "Rifa do iPhone"], ["galleries", "Fotos dos cultos"], ["settings", "Programação e contato"]].map(([key,label]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => {setTab(key); revealOnPhone("admin-workspace");}}>{label}</button>)}
+      {[["overview", "Visão geral"], ["events", "Eventos"], ["submissions", "Inscrições e contatos"], ["reminders", "Lembretes"], ["rifa", "Rifa do iPhone"], ["galleries", "Fotos dos cultos"], ["settings", "Programação e contato"]].map(([key,label]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => {setTab(key); revealOnPhone("admin-workspace");}}>{label}</button>)}
     </nav><a href="/" className="admin-return">Ver site público</a></aside>
     <div className="admin-workspace" id="admin-workspace"><Notice error={error}/>
       {tab === "overview" && <>
@@ -69,7 +71,7 @@ export function AdminPanel() {
             {event.image_url ? <img src={event.image_url} alt="" className="admin-event-thumb"/> : <span className="admin-event-thumb"/>}
             <div className="admin-event-info"><strong>{event.name}</strong><span>{dateLabel(event.event_date)}{event.time ? ` · ${event.time.replace(":","h")}` : ""}</span><div className="admin-event-tags"><span className={`admin-tag ${event.published ? "is-positive" : ""}`}>{event.published ? "No site" : "Rascunho"}</span><span className={`admin-tag ${open ? "is-positive" : ""}`}>{open ? "Inscrições abertas" : "Inscrições encerradas"}</span></div></div>
             <div className="admin-event-count"><strong>{event.registrations}{event.capacity ? `/${event.capacity}` : ""}</strong><span>inscrito(s)</span></div>
-            <div className="admin-event-actions"><button className="btn-secondary" onClick={() => registrations(event.id)}>Ver inscritos</button><button className="admin-text-button" onClick={() => {setEventId(event.id); setTab("events"); revealOnPhone("admin-editor");}}>Editar</button></div>
+            <div className="admin-event-actions"><button className="btn-secondary" onClick={() => registrations(event.id)}>Ver inscritos</button><button className="admin-text-button" onClick={() => {setReminderEvent(event.id); setTab("reminders"); revealOnPhone("admin-workspace");}}>Lembrete</button><button className="admin-text-button" onClick={() => {setEventId(event.id); setTab("events"); revealOnPhone("admin-editor");}}>Editar</button></div>
           </li>;})}</ul> : <p className="body-copy mt-4">Cadastre o primeiro evento, adicione a arte e abra as inscrições quando estiver pronto.</p>}
         </section>
         <RaffleOverview onOpen={() => {setTab("rifa"); revealOnPhone("admin-workspace");}}/>
@@ -88,6 +90,7 @@ export function AdminPanel() {
         <div className="admin-editor-layout"><div className="admin-record-list">{data.galleries.length ? data.galleries.map(album => <button key={album.id} className={`panel admin-record ${galleryId === album.id ? "is-selected" : ""}`} onClick={() => {setGalleryId(album.id); revealOnPhone("admin-editor");}}><span className="admin-badge">{album.published ? "Publicado" : "Rascunho"}</span><strong>{album.name}</strong><span>{album.category}{album.event_date ? ` · ${dateLabel(album.event_date)}` : ""}</span><span>{album.photos} fotos</span></button>) : <p className="body-copy">Crie um álbum para organizar as fotos por culto ou evento.</p>}</div>
         <GalleryEditor key={galleryId ?? "new"} gallery={data.galleries.find(album => album.id === galleryId)} onSaved={async id => {await refresh(); setGalleryId(id);}} onUpdated={refresh}/></div>
       </>}
+      {tab === "reminders" && <Reminders key={reminderEvent ?? "none"} events={sortedEvents} initialEvent={reminderEvent ?? sortedEvents.find(event => event.event_date >= new Date().toISOString().slice(0, 10))?.id ?? sortedEvents[0]?.id ?? null}/>}
       {tab === "rifa" && <RaffleAdmin/>}
       {tab === "settings" && <Settings data={data.content} onSaved={refresh}/>}
     </div>
@@ -160,6 +163,76 @@ function Registrations({events, initialEvent, initialKind, onChanged}: {events: 
       }}>{!statusLabels[row.status] && <option value={row.status}>{row.status}</option>}{Object.entries(statusLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></Field></div>{(links.whatsapp || links.phone || links.email) && <div className="admin-contact-actions">{links.whatsapp && <a className="is-whatsapp" href={links.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>}{links.phone && <a href={links.phone}>Ligar</a>}{links.email && <a href={links.email}>E-mail</a>}</div>}<details className="mt-5"><summary className="admin-text-button">Ver dados enviados</summary><dl className="admin-details">{Object.entries(payload).map(([key,value])=><div key={key}><dt>{key.replaceAll("_"," ")}</dt><dd>{String(value) || "Não informado"}</dd></div>)}</dl></details></article>;
     })}</div>
     {result && result.total > 30 && <div className="mt-6 flex flex-wrap items-center gap-4"><button className="btn-secondary" disabled={filters.page<=1 || loading} onClick={()=>setFilters({...filters,page:filters.page-1})}>Anterior</button><span>Página {result.page} de {Math.ceil(result.total/30)}</span><button className="btn-secondary" disabled={filters.page*30>=result.total || loading} onClick={()=>setFilters({...filters,page:filters.page+1})}>Próxima</button></div>}
+  </>;
+}
+
+type ReminderRow = {id: number; name: string; email: string; whatsapp: string; number: string; url: string; reminder_sent_at: string | null};
+type ReminderEvent = {id: number; name: string; event_date: string; time: string; location: string};
+const reminderStorage = (eventId: number) => `lembrete-whatsapp-${eventId}`;
+function Reminders({events, initialEvent}: {events: EventRecord[]; initialEvent: number | null}) {
+  const [eventId, setEventId] = useState(initialEvent);
+  const [result, setResult] = useState<{event: ReminderEvent; rows: ReminderRow[]} | null>(null);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [search, setSearch] = useState("");
+  const [onlyPending, setOnlyPending] = useState(false);
+  // Quem já recebeu o WhatsApp fica marcado neste aparelho, como no painel da rifa.
+  const [whatsappSent, setWhatsappSent] = useState<Record<number, true>>({});
+  const load = useCallback(async () => {
+    if (!eventId) return;
+    setError("");
+    setResult(await api<{event: ReminderEvent; rows: ReminderRow[]}>(`events/reminder?event=${eventId}`));
+  }, [eventId]);
+  useEffect(() => { load().catch(error => setError(error.message)); }, [load]);
+  useEffect(() => {
+    if (!eventId) return;
+    try { setWhatsappSent(JSON.parse(localStorage.getItem(reminderStorage(eventId)) || "{}")); } catch { setWhatsappSent({}); }
+  }, [eventId]);
+  function markWhatsapp(id: number, sent: boolean) {
+    if (!eventId) return;
+    const next = {...whatsappSent}; if (sent) next[id] = true; else delete next[id];
+    setWhatsappSent(next);
+    try { localStorage.setItem(reminderStorage(eventId), JSON.stringify(next)); } catch { /* aparelho sem armazenamento */ }
+  }
+  async function sendEmails() {
+    if (!eventId || !result) return;
+    const pending = result.rows.filter(row => !row.reminder_sent_at && row.email).length;
+    if (!window.confirm(`Enviar o lembrete por e-mail para ${pending} pessoa(s) que ainda não receberam?`)) return;
+    setSending(true); setError(""); setMessage("");
+    let total = 0;
+    try {
+      for (;;) {
+        const step = await api<{sent: number; failed: number; limit: boolean; remaining: number}>("events/reminder", json({event_id: eventId}));
+        total += step.sent;
+        setMessage(`Enviando… ${total} e-mail(s) enviados, faltam ${step.remaining}.`);
+        if (step.limit) { setError(`${total} enviado(s). O Brevo atingiu o limite de envios do dia; clique de novo amanhã para enviar aos ${step.remaining} restantes.`); break; }
+        if (!step.remaining || !step.sent) { setMessage(`${total} lembrete(s) enviados por e-mail.${step.remaining ? ` ${step.remaining} não foram aceitos pelo Brevo (confira os e-mails).` : ""}`); break; }
+      }
+    } catch (err) { setError(`${total} enviado(s) antes do erro. ${(err as Error).message}`); }
+    finally { setSending(false); await load().catch(() => {}); }
+  }
+  const rows = result?.rows ?? [];
+  const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const query = normalize(search.trim());
+  const visible = rows.filter(row => (!onlyPending || !whatsappSent[row.id]) && (!query || normalize(`${row.name} ${row.email} ${row.whatsapp} ${row.number}`).includes(query)));
+  const emailed = rows.filter(row => row.reminder_sent_at).length;
+  const whatsapped = rows.filter(row => whatsappSent[row.id]).length;
+  return <><div className="admin-section-heading"><div><h2>Lembretes</h2><p className="admin-subtitle">Lembre as inscritas do evento por e-mail (todas de uma vez) ou pelo WhatsApp (uma por vez, com a mensagem pronta).</p></div><button className="btn-secondary" onClick={() => load().catch(error => setError(error.message))}>Atualizar lista</button></div>
+    <div className="panel admin-filters"><Field label="Evento"><select className="field-control" value={eventId ?? ""} onChange={e => {setEventId(Number(e.target.value) || null); setResult(null); setMessage("");}}>{events.map(event => <option key={event.id} value={event.id}>{event.name} · {dateLabel(event.event_date)}</option>)}</select></Field></div>
+    <Notice error={error} message={message}/>
+    {result && <>
+      <div className="admin-metrics mt-6">{([["Inscritas", rows.length, result.event.time ? `${dateLabel(result.event.event_date)} às ${result.event.time}` : `${dateLabel(result.event.event_date)} · sem horário cadastrado`], ["Lembrete por e-mail", emailed, `${rows.length - emailed} ainda não receberam`], ["Lembrete no WhatsApp", whatsapped, "Marcado neste aparelho"]] as const).map(([label, value, hint]) => <article key={label} className="panel"><p>{label}</p><strong>{Number(value).toLocaleString("pt-BR")}</strong><span>{hint}</span></article>)}</div>
+      <section className="panel admin-overview-block"><div className="admin-block-heading"><div><h3>E-mail para todas</h3><p>Envia pelo Brevo, com a data, o local e o link do comprovante com QR code. Quem já recebeu não recebe de novo. O plano gratuito do Brevo permite 300 e-mails por dia.</p></div><button className="btn-primary" disabled={sending || emailed === rows.length} onClick={sendEmails}>{sending ? "Enviando…" : emailed === rows.length ? "Todas já receberam" : `Enviar para ${rows.length - emailed}`}</button></div></section>
+      <section className="panel admin-overview-block"><div className="admin-block-heading"><div><h3>WhatsApp, uma por uma</h3><p>O botão abre a conversa com o lembrete pronto. Depois de enviar, marque como enviado.</p></div></div>
+        <div className="admin-filters mt-4"><Field label="Buscar nome, e-mail, telefone ou nº"><input className="field-control" value={search} maxLength={100} onChange={e => setSearch(e.target.value)} placeholder="Digite para buscar"/></Field><label className="field-label"><span>Mostrar</span><select className="field-control" value={onlyPending ? "pending" : "all"} onChange={e => setOnlyPending(e.target.value === "pending")}><option value="all">Todas</option><option value="pending">Só quem falta no WhatsApp</option></select></label></div>
+        <p className="my-4 text-sm text-zinc-600" role="status">{visible.length} de {rows.length}</p>
+        <div className="admin-submissions">{visible.map(row => { const link = row.url ? reminderWhatsapp({...row, event: result.event}) : ""; return <article key={row.id} className="panel admin-submission">
+          <div className="admin-submission-head flex flex-wrap justify-between gap-4"><div><h3 className="text-lg font-bold">{row.name || row.email}</h3><p className="mt-1 text-sm text-zinc-600">Nº {row.number} · {row.whatsapp} · {row.email}</p><div className="admin-event-tags mt-2"><span className={`admin-tag ${row.reminder_sent_at ? "is-positive" : ""}`}>{row.reminder_sent_at ? "E-mail enviado" : "E-mail pendente"}</span><span className={`admin-tag ${whatsappSent[row.id] ? "is-positive" : ""}`}>{whatsappSent[row.id] ? "WhatsApp enviado" : "WhatsApp pendente"}</span></div></div></div>
+          <div className="admin-contact-actions">{link ? <a className="is-whatsapp" href={link} target="_blank" rel="noreferrer" onClick={() => markWhatsapp(row.id, true)}>WhatsApp com lembrete</a> : <span className="text-sm text-zinc-600">Telefone inválido</span>}{whatsappSent[row.id] && <button type="button" className="admin-text-button" onClick={() => markWhatsapp(row.id, false)}>Desmarcar</button>}</div>
+        </article>; })}</div>
+      </section>
+    </>}
   </>;
 }
 

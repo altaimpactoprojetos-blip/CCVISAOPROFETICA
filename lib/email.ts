@@ -1,6 +1,7 @@
 import { emailSettings, formatDate } from "./content";
 import type { Ticket } from "./tickets";
 import { formatMoney, formatNumber, type RaffleOrder } from "./raffle";
+import { reminderEmail, type ReminderInput } from "./reminder";
 
 /**
  * Confirmação de inscrição por e-mail via Brevo. Silencioso quando a chave
@@ -87,4 +88,29 @@ export async function sendRaffleEmail(order: RaffleOrder, url: string, prize: st
   });
   if (!response.ok) { console.error("Brevo raffle email failed", response.status, await response.text().catch(() => "")); return false; }
   return true;
+}
+
+/** Lembrete do evento, disparado pelo painel. "limite": acabaram os envios do dia no plano do Brevo. */
+export async function sendReminderEmail(input: ReminderInput & {email: string}): Promise<"enviado" | "falhou" | "limite" | "sem_configuracao"> {
+  const stored = await emailSettings();
+  const apiKey = String(process.env.BREVO_API_KEY ?? stored.brevo_api_key ?? "").trim();
+  const senderEmail = String(process.env.BREVO_SENDER_EMAIL ?? stored.sender_email ?? "").trim();
+  const senderName = String(process.env.BREVO_SENDER_NAME ?? stored.sender_name ?? "").trim() || "Comunidade Cristã Visão Profética";
+  if (!apiKey || !senderEmail) return "sem_configuracao";
+  const message = reminderEmail(input);
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {"api-key": apiKey, "content-type": "application/json", accept: "application/json"},
+    body: JSON.stringify({
+      sender: {email: senderEmail, name: senderName},
+      to: [{email: input.email, name: input.name || undefined}],
+      subject: message.subject,
+      htmlContent: message.html,
+      textContent: message.text,
+      tags: ["lembrete-evento"],
+    }),
+  });
+  if (response.ok) return "enviado";
+  console.error("Brevo reminder failed", response.status, await response.text().catch(() => ""));
+  return response.status === 402 || response.status === 429 ? "limite" : "falhou";
 }
