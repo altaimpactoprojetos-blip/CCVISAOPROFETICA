@@ -9,6 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Browser probe
+        run: |
+          npm i --no-save playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          node .github/diag/probe.mjs
       - name: DNS
         run: |
           for host in ccvisaoprofetica.online www.ccvisaoprofetica.online; do
