@@ -88,3 +88,56 @@ export async function sendRaffleEmail(order: RaffleOrder, url: string, prize: st
   if (!response.ok) { console.error("Brevo raffle email failed", response.status, await response.text().catch(() => "")); return false; }
   return true;
 }
+
+export type ReminderRecipient = {email: string; name: string; number: string; url: string};
+
+/**
+ * Lembrete do evento. Texto simples e pessoal, com versão em texto puro e
+ * resposta para a igreja, o que ajuda a mensagem a chegar na caixa principal.
+ * Envia em lotes pelo recurso messageVersions do Brevo (uma chamada a cada 90 pessoas).
+ */
+export async function sendReminderEmails(event: {name: string; event_date: string; location: string}, time: string, note: string, recipients: ReminderRecipient[]) {
+  const stored = await emailSettings();
+  const apiKey = String(process.env.BREVO_API_KEY ?? stored.brevo_api_key ?? "").trim();
+  const senderEmail = String(process.env.BREVO_SENDER_EMAIL ?? stored.sender_email ?? "").trim();
+  const senderName = String(process.env.BREVO_SENDER_NAME ?? stored.sender_name ?? "").trim() || "Comunidade Cristã Visão Profética";
+  if (!apiKey || !senderEmail) throw new Error("Configure o e-mail do Brevo em Programação e contato antes de enviar.");
+  const escape = (value: string) => value.replace(/[&<>"']/g, char => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[char] as string));
+  const today = new Date().toLocaleDateString("en-CA", {timeZone: "America/Fortaleza"}) === event.event_date;
+  const when = `${today ? "hoje, " : ""}${formatDate(event.event_date)}${time ? `, às ${time.replace(":", "h")}` : ""}`;
+  const subject = today ? `É hoje: ${event.name}` : `Lembrete: ${event.name}`;
+  const noteHtml = note ? `<p style="margin:0 0 16px">${escape(note).replace(/\n/g, "<br>")}</p>` : "";
+  const html = `<!doctype html><html lang="pt-BR"><body style="margin:0;padding:24px 16px;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#17191c;font-size:16px;line-height:1.6">
+<div style="max-width:560px;margin:0 auto">
+<p style="margin:0 0 16px">Olá, {{ params.nome }}!</p>
+<p style="margin:0 0 16px">${today ? "Passando para lembrar que <strong>é hoje</strong>" : "Passando para lembrar"} o <strong>${escape(event.name)}</strong>. Estamos preparando tudo com muito carinho para receber você.</p>
+<p style="margin:0 0 4px"><strong>Quando:</strong> ${escape(when)}</p>
+<p style="margin:0 0 16px"><strong>Onde:</strong> ${escape(event.location)}</p>
+${noteHtml}<p style="margin:0 0 16px">Na entrada, mostre o QR code da sua inscrição (nº {{ params.numero }}). Ele está neste link:<br><a href="{{ params.link }}" style="color:#0b57d0">{{ params.link }}</a></p>
+<p style="margin:0 0 16px">Se não puder ir, responda este e-mail para liberarmos a vaga.</p>
+<p style="margin:0">Até já!<br>${escape(senderName)}</p>
+</div></body></html>`;
+  const text = `Olá, {{ params.nome }}!\n\n${today ? "Passando para lembrar que é hoje" : "Passando para lembrar"} o ${event.name}.\n\nQuando: ${when}\nOnde: ${event.location}\n${note ? `\n${note}\n` : ""}\nNa entrada, mostre o QR code da sua inscrição (nº {{ params.numero }}): {{ params.link }}\n\nSe não puder ir, responda este e-mail para liberarmos a vaga.\n\nAté já!\n${senderName}`;
+  let sent = 0;
+  for (let start = 0; start < recipients.length; start += 90) {
+    const batch = recipients.slice(start, start + 90);
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {"api-key": apiKey, "content-type": "application/json", accept: "application/json"},
+      body: JSON.stringify({
+        sender: {email: senderEmail, name: senderName},
+        replyTo: {email: senderEmail, name: senderName},
+        subject,
+        htmlContent: html,
+        textContent: text,
+        messageVersions: batch.map(person => ({to: [{email: person.email, name: person.name || undefined}], params: {nome: escape(person.name.split(" ")[0] || "querida"), numero: person.number, link: person.url}})),
+      }),
+    });
+    if (!response.ok) {
+      console.error("Brevo reminder failed", response.status, await response.text().catch(() => ""));
+      throw new Error(`O Brevo recusou o envio (erro ${response.status}). ${sent} e-mail(s) já tinham saído. Confira o painel do Brevo.`);
+    }
+    sent += batch.length;
+  }
+  return sent;
+}
