@@ -38,6 +38,7 @@ export function CheckInDesk({staffName}: {staffName: string}) {
   const [busy, setBusy] = useState<number | null>(null);
   const [scanning, setScanning] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const lastScan = useRef({text: "", at: 0});
   const eventRef = useRef<number | null>(null);
   useEffect(() => { eventRef.current = eventId; }, [eventId]);
@@ -66,6 +67,8 @@ export function CheckInDesk({staffName}: {staffName: string}) {
       const result = await post({...value, event_id: eventRef.current});
       const next = describe(result);
       setOutcome(next);
+      // Validou pela busca: limpa o campo para procurar a próxima pessoa.
+      if (result.status === "validada" && !("ticket" in value)) { setQuery(""); window.scrollTo({top: 0, behavior: "smooth"}); }
       navigator.vibrate?.(next.tone === "ok" ? 120 : [80, 60, 80]);
       await load(eventRef.current);
     } catch (problem) {
@@ -73,6 +76,13 @@ export function CheckInDesk({staffName}: {staffName: string}) {
       navigator.vibrate?.([80, 60, 80]);
     }
   }, [load]);
+
+  // O aviso some sozinho; os de atenção ficam mais tempo na tela.
+  useEffect(() => {
+    if (!outcome) return;
+    const timer = setTimeout(() => setOutcome(null), outcome.tone === "ok" ? 5000 : 10000);
+    return () => clearTimeout(timer);
+  }, [outcome]);
 
   useEffect(() => {
     if (!scanning) return;
@@ -119,27 +129,26 @@ export function CheckInDesk({staffName}: {staffName: string}) {
         {data.events.map(event => <option key={event.id} value={event.id}>{event.name} · {dateLabel(event.event_date)}</option>)}
       </select></label>
       <div className="checkin-count" aria-live="polite"><strong>{done}</strong><span>de {list.length} validada(s)</span><span className="checkin-bar" aria-hidden="true"><span style={{width: `${list.length ? done / list.length * 100 : 0}%`}}/></span></div>
-      {data.event && <a className="btn-secondary" href={`/recepcao/lista?evento=${data.event.id}`} target="_blank" rel="noreferrer">Imprimir lista</a>}
+      {data.event && <a className="btn-secondary checkin-print" href={`/recepcao/lista?evento=${data.event.id}`} target="_blank" rel="noreferrer">Imprimir lista</a>}
     </div>
 
-    <div className="checkin-actions">
-      <button type="button" className={scanning ? "btn-secondary" : "btn-primary"} onClick={() => {
-        setError("");
-        if (!scanning && !navigator.mediaDevices?.getUserMedia) { setError("Este navegador não abre a câmera. Use o Chrome ou o Safari atualizado, ou procure pelo nome."); return; }
-        setScanning(value => !value);
-      }}>{scanning ? "Fechar câmera" : "Ler QR code"}</button>
-      <span className="text-sm text-zinc-600">Recepção: <strong>{staffName}</strong></span>
-    </div>
-    {scanning && <div className="checkin-camera"><video ref={videoRef} playsInline muted/><span aria-hidden="true"/><p>Aponte a câmera para o QR code do comprovante.</p></div>}
-    {error && <p className="admin-notice admin-error" role="alert">{error}</p>}
-    {outcome && <div className={`checkin-outcome is-${outcome.tone}`} role="status"><strong>{outcome.title}</strong><span>{outcome.detail}</span><button type="button" className="admin-text-button" onClick={() => setOutcome(null)}>Fechar</button></div>}
-
-    <div className="panel checkin-search">
-      <label className="field-label"><span>Procurar pelo nome, WhatsApp ou nº da inscrição</span><input className="field-control" type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Ex.: Maria" autoComplete="off" enterKeyHint="search"/></label>
+    <div className="checkin-tools panel">
+      <div className="checkin-search-row">
+        <input ref={searchRef} className="field-control" type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Nome, WhatsApp ou nº" aria-label="Procurar pelo nome, WhatsApp ou nº da inscrição" autoComplete="off" enterKeyHint="search"/>
+        <button type="button" className={scanning ? "btn-secondary" : "btn-primary"} onClick={() => {
+          setError("");
+          if (!scanning && !navigator.mediaDevices?.getUserMedia) { setError("Este navegador não abre a câmera. Use o Chrome ou o Safari atualizado, ou procure pelo nome."); return; }
+          setScanning(value => !value);
+        }}>{scanning ? "Fechar câmera" : "Ler QR code"}</button>
+      </div>
       <div className="checkin-filter" role="group" aria-label="Mostrar">
         {([["todas", `Todas (${list.length})`], ["faltam", `Faltam (${list.length - done})`], ["validadas", `Validadas (${done})`]] as const).map(([key, label]) => <button key={key} type="button" aria-pressed={show === key} onClick={() => setShow(key)}>{label}</button>)}
+        <span className="checkin-staff">Recepção: <strong>{staffName}</strong></span>
       </div>
+      {error && <p className="admin-notice admin-error" role="alert">{error}</p>}
     </div>
+    {scanning && <div className="checkin-camera"><video ref={videoRef} playsInline muted/><span aria-hidden="true"/><p>Aponte a câmera para o QR code do comprovante.</p></div>}
+    {outcome && <div className={`checkin-outcome is-${outcome.tone}`} role="status"><strong>{outcome.title}</strong><span>{outcome.detail}</span><button type="button" aria-label="Fechar aviso" onClick={() => setOutcome(null)}>×</button></div>}
 
     <ul className="checkin-list">
       {visible.length === 0 && <li className="panel p-6">Nenhuma inscrita encontrada{query ? ` para “${query}”` : ""}.</li>}
