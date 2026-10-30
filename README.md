@@ -42,6 +42,15 @@ O perfil scrypt segue a alternativa de 16 MiB da [orientação OWASP](https://ch
 
 Os formulários anteriores continuam na tabela `submissions`. Inscrições antigas sem vínculo explícito com evento ficam disponíveis pelos filtros de assunto e busca; o projeto não inventa vínculos retroativos. A reserva de vagas usa uma função transacional do Postgres para manter a mesma proteção contra concorrência.
 
+## Recepção: validar inscrições e imprimir a lista
+
+- No painel, aba **Recepção**: criar o acesso de cada recepcionista (nome, e-mail e senha) e remover quando não precisar mais.
+- A recepcionista entra em `/recepcao` com o próprio e-mail e senha. Ela não vê o painel, só a tela da recepção.
+- Na tela: escolher o evento (o de mulheres aparece primeiro), **Ler QR code** pela câmera do celular ou procurar pelo nome, WhatsApp ou nº da inscrição, e tocar em **Validar entrada**. A lista se atualiza sozinha a cada 15 s, então as duas recepcionistas veem as validações uma da outra. A validação é atômica: a mesma inscrição não entra duas vezes, e o aviso mostra a hora e quem validou.
+- Se a recepcionista abrir o link do QR code pela câmera do próprio celular estando logada, o comprovante mostra o botão **Validar entrada**.
+- `/recepcao/lista?evento=ID` imprime a lista em ordem alfabética, separada por letra, com nº da inscrição, WhatsApp e a coluna de presença. `&partes=2` divide a lista em duas (uma por recepcionista), sem separar a mesma letra.
+- Migração: `supabase/migrations/20261030120000_recepcao_checkin.sql` (coluna `role` nos acessos e `checked_in_at`/`checked_in_by` nas inscrições). Aplique antes de publicar o código.
+
 ## Rifa solidária (iPhone 17)
 
 `/rifa` vende números para arrecadar o valor do telão da igreja (meta padrão de R$ 80.000). Cada número custa R$ 5. Há pacotes de R$ 5, 10, 15, 20 e 50, e a pessoa também pode digitar outro valor múltiplo de R$ 5, até R$ 1.000. Os números vão de 00000 a 99999 e são distribuídos aleatoriamente, sem repetição (`raffle_numbers` tem o número como chave primária).

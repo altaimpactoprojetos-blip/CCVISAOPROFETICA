@@ -394,3 +394,77 @@ main .page-hero .text-zinc-400, main .bg-black .eyebrow, main .next-steps .text-
 .raffle-jump span { font-size: 1.15em; line-height: 1; }
 .event-detail-aside { scroll-margin-top: 112px; }
 @media (min-width: 1001px) { .raffle-jump { width: auto; padding-inline: 2.2rem; } }
+
+/* Recepção: validação das inscrições na entrada */
+.checkin { display: grid; gap: 16px; }
+.checkin-top { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 20px; align-items: end; padding: 20px; }
+.checkin-count { display: grid; justify-items: end; min-width: 150px; }
+.checkin-count strong { font-size: 2.25rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.checkin-count > span { font-size: .8125rem; color: var(--muted); margin-top: 4px; }
+.checkin-bar { display: block; width: 100%; height: 6px; margin-top: 8px; border-radius: 99px; background: #eceff2; overflow: hidden; }
+.checkin-bar span { display: block; height: 100%; background: #1b6b3a; }
+.checkin-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.checkin-actions .btn-primary, .checkin-actions .btn-secondary { min-width: 220px; }
+.checkin-camera { position: relative; overflow: hidden; border-radius: 12px; background: #111; max-width: 520px; width: 100%; margin-inline: auto; }
+.checkin-camera video { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+.checkin-camera > span { position: absolute; inset: 18%; border: 3px solid rgba(255,255,255,.9); border-radius: 16px; box-shadow: 0 0 0 999px rgba(0,0,0,.35); pointer-events: none; }
+.checkin-camera p { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px; color: #fff; text-align: center; font-size: .875rem; background: rgba(0,0,0,.55); }
+.checkin-outcome { display: grid; gap: 6px; padding: 18px 20px; border-radius: 12px; border: 2px solid; }
+.checkin-outcome strong { font-size: 1.25rem; }
+.checkin-outcome button { justify-self: start; }
+.checkin-outcome.is-ok { background: #e6f6ec; border-color: #1b6b3a; color: #124d29; }
+.checkin-outcome.is-warn { background: #fff4e0; border-color: #c27a00; color: #6b4100; }
+.checkin-outcome.is-error { background: #fdeaea; border-color: #b42318; color: #7a1a12; }
+.checkin-search { display: grid; gap: 14px; padding: 20px; }
+.checkin-search input { font-size: 1.125rem; }
+.checkin-filter { display: flex; flex-wrap: wrap; gap: 8px; }
+.checkin-filter button { padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font-size: .875rem; font-weight: 600; }
+.checkin-filter button[aria-pressed='true'] { background: #17191c; border-color: #17191c; color: #fff; }
+.checkin-list { display: grid; gap: 10px; }
+.checkin-list > li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; }
+.checkin-list > li.is-done { background: #f3faf5; border-color: #b2d7bf; }
+.checkin-person { display: grid; gap: 3px; min-width: 0; }
+.checkin-person strong { font-size: 1.0625rem; }
+.checkin-person span { font-size: .875rem; color: var(--muted); }
+.checkin-person .checkin-done { color: #1b6b3a; font-weight: 600; }
+.checkin-list .btn-primary { flex-shrink: 0; }
+@media(max-width:700px) { .checkin-top { grid-template-columns: 1fr; } .checkin-count { justify-items: start; } .checkin-actions .btn-primary, .checkin-actions .btn-secondary { width: 100%; } .checkin-list > li { flex-wrap: wrap; } .checkin-list .btn-primary { width: 100%; } }
+
+/* Lista impressa das inscrições */
+.print-list { max-width: 900px; margin: 0 auto; padding: 24px 16px 48px; background: #fff; color: #111; }
+.print-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; padding: 16px; margin-bottom: 24px; border: 1px solid var(--line); border-radius: 12px; background: #f6f7f9; }
+.print-options { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; flex: 1; }
+.print-options label { display: grid; gap: 4px; font-size: .8125rem; font-weight: 600; }
+.print-header { display: grid; grid-template-columns: 56px minmax(0,1fr) auto; gap: 16px; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #111; }
+.print-header img { width: 56px; height: 56px; object-fit: contain; }
+.print-church { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: #555; }
+.print-header h1 { font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
+.print-header p { font-size: .875rem; }
+.print-header dl { display: flex; gap: 16px; text-align: right; }
+.print-header dt { font-size: .6875rem; text-transform: uppercase; letter-spacing: .06em; color: #555; }
+.print-header dd { font-size: 1.25rem; font-weight: 800; }
+.print-meta { margin: 10px 0 12px; font-size: .75rem; color: #444; }
+.print-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.print-table th { padding: 6px 8px; border-bottom: 2px solid #111; text-align: left; font-size: .6875rem; text-transform: uppercase; letter-spacing: .06em; }
+.print-table td { padding: 7px 8px; border-bottom: 1px solid #c9ccd1; vertical-align: middle; }
+.print-table tbody tr:nth-child(even):not(.print-letter) td { background: #f6f7f9; }
+.print-letter td { padding: 10px 8px 4px; border-bottom: 1px solid #111; font-weight: 800; font-size: 1rem; background: #fff !important; }
+.print-index { width: 3ch; color: #666; font-variant-numeric: tabular-nums; }
+.print-name { font-weight: 600; }
+.print-number { font-family: ui-monospace, monospace; white-space: nowrap; }
+.print-check { width: 92px; text-align: center; white-space: nowrap; }
+.print-box { display: inline-block; width: 18px; height: 18px; border: 1.5px solid #111; border-radius: 3px; vertical-align: middle; }
+.print-page + .print-page { margin-top: 48px; }
+@media print {
+  @page { size: A4; margin: 12mm 10mm; }
+  body { background: #fff !important; }
+  .print-toolbar { display: none !important; }
+  .print-list { max-width: none; padding: 0; }
+  .print-page + .print-page { margin-top: 0; break-before: page; }
+  .print-table thead { display: table-header-group; }
+  .print-table tr { break-inside: avoid; }
+  .print-letter { break-after: avoid; }
+  .print-table tbody tr:nth-child(even):not(.print-letter) td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.ticket-checkin { display: grid; gap: 10px; padding: 16px; border: 2px dashed #17191c; border-radius: 12px; }
+@media print { .ticket-checkin { display: none !important; } }

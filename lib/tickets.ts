@@ -43,13 +43,15 @@ export type Ticket = {
   name: string;
   email: string;
   whatsapp: string;
+  checkedInAt: string | null;
+  checkedInBy: string | null;
   event: Pick<EventRecord, "id" | "name" | "event_date" | "time" | "location" | "image_url" | "published">;
 };
 
 export async function ticketByCode(code: string): Promise<Ticket | null> {
   if (!ticketCodePattern.test(code)) return null;
   const db = database();
-  const submission = await db.from("submissions").select("id, payload, status, created_at, event_id, ticket_code").eq("ticket_code", code).maybeSingle();
+  const submission = await db.from("submissions").select("*").eq("ticket_code", code).maybeSingle();
   if (submission.error) throw submission.error;
   if (!submission.data || !submission.data.event_id) return null;
   const event = await db.from("events").select("id, name, event_date, time, location, image_url, published").eq("id", submission.data.event_id).maybeSingle();
@@ -66,6 +68,8 @@ export async function ticketByCode(code: string): Promise<Ticket | null> {
     name: payload.nome ?? "",
     email: payload.email ?? "",
     whatsapp: payload.whatsapp ?? "",
+    checkedInAt: submission.data.checked_in_at ?? null,
+    checkedInBy: submission.data.checked_in_by ?? null,
     event: event.data as Ticket["event"],
   };
 }

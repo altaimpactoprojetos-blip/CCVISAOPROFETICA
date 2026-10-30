@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import { SiteShell } from "../../../components/SiteShell";
 import { PageHero } from "../../../components/PageHero";
 import { ShareTicket } from "../../../components/ShareTicket";
+import { TicketCheckIn } from "../../../components/TicketCheckIn";
+import { getStaff } from "../../../lib/admin-auth";
 import { formatDate } from "../../../lib/content";
 import { ticketByCode, ticketCodePattern, ticketQrSvg, ticketUrl } from "../../../lib/tickets";
 export const dynamic = "force-dynamic";
@@ -21,6 +23,7 @@ export default async function TicketPage({params}: {params: Promise<{code: strin
   const url = ticketUrl(`https://${host}`, ticket.code);
   const qr = await ticketQrSvg(url);
   const active = ticket.status !== "cancelado";
+  const staff = await getStaff().catch(() => null);
   const maskedEmail = ticket.email.replace(/^(.)[^@]*(@.*)$/, "$1***$2");
   const when = `${formatDate(ticket.event.event_date)}${ticket.event.time ? ` às ${ticket.event.time}` : ""}`;
   return <SiteShell>
@@ -44,6 +47,7 @@ export default async function TicketPage({params}: {params: Promise<{code: strin
             <p className="ticket-code mt-1">{ticket.code}</p>
           </div>
           <p className="body-copy text-sm">Apresente este QR code na entrada do evento. Salve esta página ou compartilhe o link.</p>
+          {active && staff && <TicketCheckIn id={ticket.id} checkedInAt={ticket.checkedInAt} checkedInBy={ticket.checkedInBy}/>}
           {active && <ShareTicket url={url} eventName={ticket.event.name} when={when}/>}
           {active && ticket.email && <div className="ticket-email-notice" role="note"><strong>Enviamos este comprovante para o seu e-mail</strong><span>A mensagem foi para {maskedEmail}. Se não encontrar na caixa de entrada, confira a pasta de <strong>spam</strong> ou <strong>lixo eletrônico</strong> e marque como &quot;não é spam&quot;.</span></div>}
         </div>
