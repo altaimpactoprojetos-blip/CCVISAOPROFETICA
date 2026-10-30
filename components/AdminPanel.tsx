@@ -58,7 +58,7 @@ export function AdminPanel() {
   const formTotal = formKinds.reduce((sum, row) => sum + row.total, 0);
   return <div className="container-shell admin-layout">
     <aside className="admin-sidebar"><nav aria-label="Seções da administração">
-      {[["overview", "Visão geral"], ["events", "Eventos"], ["submissions", "Inscrições e contatos"], ["rifa", "Rifa do iPhone"], ["galleries", "Fotos dos cultos"], ["settings", "Programação e contato"]].map(([key,label]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => {setTab(key); revealOnPhone("admin-workspace");}}>{label}</button>)}
+      {[["overview", "Visão geral"], ["events", "Eventos"], ["submissions", "Inscrições e contatos"], ["rifa", "Rifa do iPhone"], ["recepcao", "Recepção"], ["galleries", "Fotos dos cultos"], ["settings", "Programação e contato"]].map(([key,label]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => {setTab(key); revealOnPhone("admin-workspace");}}>{label}</button>)}
     </nav><a href="/" className="admin-return">Ver site público</a></aside>
     <div className="admin-workspace" id="admin-workspace"><Notice error={error}/>
       {tab === "overview" && <>
@@ -69,7 +69,7 @@ export function AdminPanel() {
             {event.image_url ? <img src={event.image_url} alt="" className="admin-event-thumb"/> : <span className="admin-event-thumb"/>}
             <div className="admin-event-info"><strong>{event.name}</strong><span>{dateLabel(event.event_date)}{event.time ? ` · ${event.time.replace(":","h")}` : ""}</span><div className="admin-event-tags"><span className={`admin-tag ${event.published ? "is-positive" : ""}`}>{event.published ? "No site" : "Rascunho"}</span><span className={`admin-tag ${open ? "is-positive" : ""}`}>{open ? "Inscrições abertas" : "Inscrições encerradas"}</span></div></div>
             <div className="admin-event-count"><strong>{event.registrations}{event.capacity ? `/${event.capacity}` : ""}</strong><span>inscrito(s)</span></div>
-            <div className="admin-event-actions"><button className="btn-secondary" onClick={() => registrations(event.id)}>Ver inscritos</button><button className="admin-text-button" onClick={() => {setEventId(event.id); setTab("events"); revealOnPhone("admin-editor");}}>Editar</button></div>
+            <div className="admin-event-actions"><button className="btn-secondary" onClick={() => registrations(event.id)}>Ver inscritos</button><a className="admin-text-button" href={`/recepcao/lista?evento=${event.id}`} target="_blank" rel="noreferrer">Imprimir lista</a><button className="admin-text-button" onClick={() => {setEventId(event.id); setTab("events"); revealOnPhone("admin-editor");}}>Editar</button></div>
           </li>;})}</ul> : <p className="body-copy mt-4">Cadastre o primeiro evento, adicione a arte e abra as inscrições quando estiver pronto.</p>}
         </section>
         <RaffleOverview onOpen={() => {setTab("rifa"); revealOnPhone("admin-workspace");}}/>
@@ -89,6 +89,7 @@ export function AdminPanel() {
         <GalleryEditor key={galleryId ?? "new"} gallery={data.galleries.find(album => album.id === galleryId)} onSaved={async id => {await refresh(); setGalleryId(id);}} onUpdated={refresh}/></div>
       </>}
       {tab === "rifa" && <RaffleAdmin/>}
+      {tab === "recepcao" && <Reception events={sortedEvents}/>}
       {tab === "settings" && <Settings data={data.content} onSaved={refresh}/>}
     </div>
   </div>;
@@ -155,7 +156,7 @@ function Registrations({events, initialEvent, initialKind, onChanged}: {events: 
     <div className="admin-submissions">{!loading && result?.rows.length === 0 && <div className="panel p-8"><p>Nenhum cadastro encontrado para estes filtros.</p></div>}{result?.rows.map(row => {
       let payload: Record<string,string> = {}; try {payload=JSON.parse(row.payload);} catch {payload={observacao:"Dados antigos sem formato estruturado."};}
       const links = contactLinks(payload);
-      return <article key={row.id} className="panel admin-submission"><div className="admin-submission-head flex flex-wrap justify-between gap-4"><div><span className="admin-badge">{row.event_name || kindLabels[row.kind] || row.kind}</span><h3 className="mt-3 text-xl font-bold">{payload.nome || payload.email || `Cadastro #${row.id}`}</h3><p className="mt-2 text-sm text-zinc-600">#{row.id} · {new Date(row.created_at.replace(" ","T")+"Z").toLocaleString("pt-BR",{timeZone:"America/Fortaleza"})}{row.ticket_code && row.event_id ? <> · Inscrição nº <strong className="font-mono">{String(row.event_id).padStart(2,"0")}-{String(row.id).padStart(5,"0")}</strong> · <a className="underline" href={`/inscricao/${row.ticket_code}`} target="_blank" rel="noreferrer">comprovante</a></> : null}</p></div><Field label="Situação"><select className="field-control" value={row.status} disabled={busy!==null || loading} onChange={async e=>{
+      return <article key={row.id} className="panel admin-submission"><div className="admin-submission-head flex flex-wrap justify-between gap-4"><div><span className="admin-badge">{row.event_name || kindLabels[row.kind] || row.kind}</span><h3 className="mt-3 text-xl font-bold">{payload.nome || payload.email || `Cadastro #${row.id}`}</h3><p className="mt-2 text-sm text-zinc-600">#{row.id} · {new Date(row.created_at.replace(" ","T")+"Z").toLocaleString("pt-BR",{timeZone:"America/Fortaleza"})}{row.checked_in_at && <span className="admin-tag is-positive mr-2">Entrada validada {new Date(row.checked_in_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Fortaleza"})}{row.checked_in_by ? ` · ${row.checked_in_by}` : ""}</span>}{row.ticket_code && row.event_id ? <> · Inscrição nº <strong className="font-mono">{String(row.event_id).padStart(2,"0")}-{String(row.id).padStart(5,"0")}</strong> · <a className="underline" href={`/inscricao/${row.ticket_code}`} target="_blank" rel="noreferrer">comprovante</a></> : null}</p></div><Field label="Situação"><select className="field-control" value={row.status} disabled={busy!==null || loading} onChange={async e=>{
         setBusy(row.id);setError("");setMessage("");try {await api("submissions",json({id:row.id,status:e.target.value},"PATCH"));setRevision(value=>value+1);await onChanged();setMessage(`Cadastro #${row.id} atualizado.`);}catch(error){setError((error as Error).message);}finally{setBusy(null);}
       }}>{!statusLabels[row.status] && <option value={row.status}>{row.status}</option>}{Object.entries(statusLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></Field></div>{(links.whatsapp || links.phone || links.email) && <div className="admin-contact-actions">{links.whatsapp && <a className="is-whatsapp" href={links.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>}{links.phone && <a href={links.phone}>Ligar</a>}{links.email && <a href={links.email}>E-mail</a>}</div>}<details className="mt-5"><summary className="admin-text-button">Ver dados enviados</summary><dl className="admin-details">{Object.entries(payload).map(([key,value])=><div key={key}><dt>{key.replaceAll("_"," ")}</dt><dd>{String(value) || "Não informado"}</dd></div>)}</dl></details></article>;
     })}</div>
@@ -195,6 +196,44 @@ function Settings({data,onSaved}:{data:{schedule:Schedule;contact:Contact;email:
   return <><div className="admin-section-heading"><h2>Programação e contato</h2></div><Notice error={error} message={message}/><form className="panel admin-editor" onSubmit={e=>{e.preventDefault();save("schedule",schedule);}}><h3 className="text-xl font-bold">Programação semanal</h3><div className="mt-6 grid gap-5">{schedule.map((row,index)=><div key={index} className="admin-schedule-row">{([['name','Nome'],['day','Dia'],['time','Horário']] as const).map(([key,label])=><Field key={key} label={label}><input required type={key==="time"?"time":"text"} maxLength={key==="name"?160:60} className="field-control" value={row[key]} onChange={e=>setSchedule(current=>current.map((item,i)=>i===index?{...item,[key]:e.target.value}:item))}/></Field>)}<button type="button" aria-label={`Remover horário ${index+1}`} className="admin-text-button" onClick={()=>setSchedule(current=>current.filter((_,i)=>i!==index))}>Remover</button></div>)}</div><div className="mt-6 flex flex-wrap gap-3"><button type="button" disabled={schedule.length>=30} className="btn-secondary" onClick={()=>setSchedule([...schedule,{name:"",day:"",time:""}])}>Adicionar horário</button><button disabled={busy} className="btn-primary">Salvar programação</button></div></form>
     <form className="panel admin-editor mt-6" onSubmit={e=>{e.preventDefault();save("contact",Object.fromEntries(new FormData(e.currentTarget)));}}><h3 className="text-xl font-bold">Informações de contato</h3><div className="mt-6 grid gap-5 sm:grid-cols-2">{([['address','Endereço','text'],['whatsapp','WhatsApp','tel'],['email','E-mail','email'],['instagram','Link do Instagram','url'],['youtube','Link do YouTube','url']] as const).map(([key,label,type])=><Field key={key} label={label} full={key==='address'}><input name={key} type={type} maxLength={300} className="field-control" defaultValue={data.contact[key]}/></Field>)}</div><button disabled={busy} className="btn-primary mt-6">Salvar contato</button></form>
     <form className="panel admin-editor mt-6" onSubmit={e=>{e.preventDefault();const form=e.currentTarget;save("email",Object.fromEntries(new FormData(form))).then(()=>form.reset());}}><h3 className="text-xl font-bold">E-mail de confirmação de inscrição</h3><p className="body-copy mt-2">Enviado pelo Brevo quando alguém se inscreve em um evento, com o link do comprovante e o QR code.</p><div className="mt-6 grid gap-5 sm:grid-cols-2"><Field label="E-mail remetente (verificado no Brevo)"><input name="sender_email" type="email" maxLength={254} className="field-control" defaultValue={data.email.sender_email}/></Field><Field label="Nome do remetente"><input name="sender_name" type="text" maxLength={120} className="field-control" defaultValue={data.email.sender_name}/></Field><Field label={data.email.has_api_key?"Chave da API do Brevo (já configurada; preencha só para trocar)":"Chave da API do Brevo"} full><input name="brevo_api_key" type="password" autoComplete="off" maxLength={200} placeholder={data.email.has_api_key?"••••••••••••":"xkeysib-..."} className="field-control"/></Field></div><button disabled={busy} className="btn-primary mt-6">Salvar e-mail</button></form><AdminPassword/></>;
+}
+
+type ReceptionAccount = {id: number; email: string; display_name: string | null; created_at: string};
+function Reception({events}: {events: EventRecord[]}) {
+  const [accounts, setAccounts] = useState<ReceptionAccount[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const load = useCallback(async () => { const data = await api<{accounts: ReceptionAccount[]}>("recepcao"); setAccounts(data.accounts); }, []);
+  useEffect(() => { load().catch(error => setError(error.message)); }, [load]);
+  async function create(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault(); const form = e.currentTarget; const values = Object.fromEntries(new FormData(form));
+    setBusy(true); setError(""); setMessage("");
+    try { await api("recepcao", json(values)); form.reset(); await load(); setMessage(`Acesso criado para ${values.name}. Envie a ela o link /recepcao, o e-mail e a senha.`); }
+    catch (error) { setError((error as Error).message); } finally { setBusy(false); }
+  }
+  async function remove(account: ReceptionAccount) {
+    if (!window.confirm(`Remover o acesso de ${account.display_name || account.email}?`)) return;
+    setBusy(true); setError(""); setMessage("");
+    try { await api("recepcao", json({id: account.id}, "DELETE")); await load(); setMessage("Acesso removido."); }
+    catch (error) { setError((error as Error).message); } finally { setBusy(false); }
+  }
+  return <>
+    <div className="admin-section-heading"><div><h2>Recepção</h2><p className="admin-subtitle">As recepcionistas leem o QR code do comprovante ou procuram pelo nome e validam a entrada. Elas só veem esta tela, não o painel.</p></div><a className="btn-primary" href="/recepcao" target="_blank" rel="noreferrer">Abrir a tela da recepção</a></div>
+    <Notice error={error} message={message}/>
+    <section className="panel admin-overview-block"><div className="admin-block-heading"><div><h3>Imprimir lista de inscritas</h3><p>Lista em ordem alfabética, com o nº da inscrição e a coluna de presença. Dá para dividir em 2 partes, uma para cada recepcionista.</p></div></div>
+      <ul className="admin-count-list">{events.map(event => <li key={event.id}><span><strong>{event.name}</strong> · {dateLabel(event.event_date)} · {event.registrations} inscrito(s)</span><span className="flex flex-wrap gap-4"><a className="admin-text-button" href={`/recepcao/lista?evento=${event.id}`} target="_blank" rel="noreferrer">Lista única</a><a className="admin-text-button" href={`/recepcao/lista?evento=${event.id}&partes=2`} target="_blank" rel="noreferrer">Dividida em 2</a></span></li>)}</ul>
+    </section>
+    <section className="panel admin-overview-block"><div className="admin-block-heading"><div><h3>Acessos da recepção</h3><p>Cada recepcionista entra em <strong>/recepcao</strong> com o próprio e-mail e senha. O nome dela aparece em cada inscrição que validar.</p></div></div>
+      {accounts === null ? <p className="body-copy mt-4">Carregando…</p> : accounts.length ? <ul className="admin-count-list">{accounts.map(account => <li key={account.id}><span><strong>{account.display_name || account.email}</strong> · {account.email}</span><button type="button" className="admin-text-button" disabled={busy} onClick={() => remove(account)}>Remover acesso</button></li>)}</ul> : <p className="body-copy mt-4">Nenhuma recepcionista cadastrada ainda.</p>}
+      <form className="mt-6 grid gap-5 sm:grid-cols-2" onSubmit={create}>
+        <Field label="Nome da recepcionista *"><input name="name" required maxLength={80} className="field-control" placeholder="Ex.: Ana"/></Field>
+        <Field label="E-mail *"><input name="email" type="email" required maxLength={254} autoComplete="off" className="field-control"/></Field>
+        <Field label="Senha (mínimo 8 caracteres) *"><input name="password" type="text" required minLength={8} maxLength={128} autoComplete="off" className="field-control"/></Field>
+        <div className="flex items-end"><button className="btn-primary" disabled={busy}>{busy ? "Salvando…" : "Criar acesso"}</button></div>
+      </form>
+    </section>
+  </>;
 }
 
 type RaffleData = {settings: RaffleSettings; stats: RaffleStats; orders: {rows: RaffleOrder[]; total: number; page: number}; winner: {number: number; order: RaffleOrder} | null};

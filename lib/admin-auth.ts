@@ -13,16 +13,22 @@ export function sessionToken(cookie: string | null) {
   const token = cookie?.split(";").map(part=>part.trim()).find(part=>part.startsWith(`${SESSION_COOKIE}=`))?.slice(SESSION_COOKIE.length+1);
   return token && /^[a-f0-9]{64}$/.test(token) ? token : null;
 }
-export async function getAdmin() {
+export type StaffUser = {id:number;email:string;role:"admin"|"recepcao";display_name:string|null};
+/** Conta logada: administrador ou recepção. */
+export async function getStaff(): Promise<StaffUser | null> {
   const token = sessionToken((await headers()).get("cookie"));
   if (!token) return null;
   const db = database();
   const session = await db.from("admin_sessions").select("admin_id").eq("token_hash", digest(token)).gt("expires_at", Math.floor(Date.now()/1000)).maybeSingle();
   if (session.error) throw session.error;
   if (!session.data) return null;
-  const admin = await db.from("admin_credentials").select("id, email").eq("id", session.data.admin_id).maybeSingle();
-  if (admin.error) throw admin.error;
-  return admin.data as {id:number;email:string} | null;
+  const account = await db.from("admin_credentials").select("id, email, role, display_name").eq("id", session.data.admin_id).maybeSingle();
+  if (account.error) throw account.error;
+  return account.data as StaffUser | null;
+}
+export async function getAdmin() {
+  const staff = await getStaff();
+  return staff && staff.role === "admin" ? {id: staff.id, email: staff.email} : null;
 }
 export function sameOrigin(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin || request.headers.get("sec-fetch-site") === "cross-site") throw new RequestError("Origem da solicitação não autorizada.",403);
@@ -31,6 +37,12 @@ export async function requireAdminRequest(request: Request) {
   if (request.method !== "GET") sameOrigin(request);
   const user = await getAdmin();
   if (!user) throw new RequestError("Sua sessão expirou ou o acesso não foi autorizado. Entre novamente na administração.",403);
+  return user;
+}
+export async function requireStaffRequest(request: Request) {
+  if (request.method !== "GET") sameOrigin(request);
+  const user = await getStaff();
+  if (!user) throw new RequestError("Sua sessão expirou. Entre novamente com seu e-mail e senha.",403);
   return user;
 }
 export function privateJson(data: unknown, status = 200, extraHeaders: Record<string,string> = {}) {
