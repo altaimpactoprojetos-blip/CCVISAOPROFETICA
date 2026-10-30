@@ -198,6 +198,47 @@ function Settings({data,onSaved}:{data:{schedule:Schedule;contact:Contact;email:
     <form className="panel admin-editor mt-6" onSubmit={e=>{e.preventDefault();const form=e.currentTarget;save("email",Object.fromEntries(new FormData(form))).then(()=>form.reset());}}><h3 className="text-xl font-bold">E-mail de confirmação de inscrição</h3><p className="body-copy mt-2">Enviado pelo Brevo quando alguém se inscreve em um evento, com o link do comprovante e o QR code.</p><div className="mt-6 grid gap-5 sm:grid-cols-2"><Field label="E-mail remetente (verificado no Brevo)"><input name="sender_email" type="email" maxLength={254} className="field-control" defaultValue={data.email.sender_email}/></Field><Field label="Nome do remetente"><input name="sender_name" type="text" maxLength={120} className="field-control" defaultValue={data.email.sender_name}/></Field><Field label={data.email.has_api_key?"Chave da API do Brevo (já configurada; preencha só para trocar)":"Chave da API do Brevo"} full><input name="brevo_api_key" type="password" autoComplete="off" maxLength={200} placeholder={data.email.has_api_key?"••••••••••••":"xkeysib-..."} className="field-control"/></Field></div><button disabled={busy} className="btn-primary mt-6">Salvar e-mail</button></form><AdminPassword/></>;
 }
 
+function ReminderEmail({events}: {events: EventRecord[]}) {
+  const today = new Date().toLocaleDateString("en-CA", {timeZone: "America/Fortaleza"});
+  const initial = events.find(event => event.event_date >= today && /mulher/i.test(event.name)) ?? events.find(event => event.event_date >= today) ?? events[events.length - 1];
+  const [eventId, setEventId] = useState(initial?.id ?? 0);
+  const [pending, setPending] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [revision, setRevision] = useState(0);
+  const event = events.find(item => item.id === eventId);
+  useEffect(() => {
+    if (!eventId) return;
+    let active = true;
+    api<{pending: number}>(`lembrete?event=${eventId}`).then(data => { if (active) setPending(data.pending); }).catch(error => { if (active) setError(error.message); });
+    return () => { active = false; };
+  }, [eventId, revision]);
+  async function send(form: HTMLFormElement, mode: "teste" | "todas") {
+    const values = Object.fromEntries(new FormData(form));
+    if (mode === "todas" && !window.confirm(`Enviar o lembrete de “${event?.name}” para ${pending} pessoa(s)? Não dá para desfazer.`)) return;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const result = await api<{sent: number; to?: string}>("lembrete", json({...values, event_id: eventId, mode}));
+      setMessage(mode === "teste" ? `Teste enviado para ${result.to}. Confira se chegou na caixa principal (e não no spam) antes de enviar para todas.` : `Lembrete enviado para ${result.sent} pessoa(s).`);
+      setRevision(value => value + 1);
+    } catch (error) { setError((error as Error).message); } finally { setBusy(false); }
+  }
+  if (!events.length) return null;
+  return <section className="panel admin-overview-block"><div className="admin-block-heading"><div><h3>Lembrete por e-mail</h3><p>Envia para cada inscrita um lembrete com o dia, o local e o link do QR code. Quem já recebeu hoje não recebe de novo.</p></div></div>
+    <form className="mt-6 grid gap-5 sm:grid-cols-2" onSubmit={e => e.preventDefault()}>
+      <Field label="Evento"><select className="field-control" value={eventId} onChange={e => setEventId(Number(e.target.value))}>{events.map(item => <option key={item.id} value={item.id}>{item.name} · {dateLabel(item.event_date)}</option>)}</select></Field>
+      <Field label="Horário do evento"><input key={eventId} name="time" type="time" className="field-control" defaultValue={event?.time ?? ""}/></Field>
+      <Field label="Recado (opcional)" full><textarea name="note" rows={3} maxLength={600} className="field-control" placeholder="Ex.: Chegue com 30 minutos de antecedência. Traga sua Bíblia."/></Field>
+      <div className="sm:col-span-2 flex flex-wrap gap-3">
+        <button type="button" className="btn-secondary" disabled={busy} onClick={e => send(e.currentTarget.form!, "teste")}>Enviar teste para o meu e-mail</button>
+        <button type="button" className="btn-primary" disabled={busy || !pending} onClick={e => send(e.currentTarget.form!, "todas")}>{busy ? "Enviando…" : `Enviar para todas (${pending ?? "…"})`}</button>
+      </div>
+    </form>
+    <Notice error={error} message={message}/>
+  </section>;
+}
+
 type ReceptionAccount = {id: number; email: string; display_name: string | null; created_at: string};
 function Reception({events}: {events: EventRecord[]}) {
   const [accounts, setAccounts] = useState<ReceptionAccount[] | null>(null);
@@ -224,6 +265,7 @@ function Reception({events}: {events: EventRecord[]}) {
     <section className="panel admin-overview-block"><div className="admin-block-heading"><div><h3>Imprimir lista de inscritas</h3><p>Lista em ordem alfabética, com o nº da inscrição e a coluna de presença. Dá para dividir em 2 partes, uma para cada recepcionista.</p></div></div>
       <ul className="admin-count-list">{events.map(event => <li key={event.id}><span><strong>{event.name}</strong> · {dateLabel(event.event_date)} · {event.registrations} inscrito(s)</span><span className="flex flex-wrap gap-4"><a className="admin-text-button" href={`/recepcao/lista?evento=${event.id}`} target="_blank" rel="noreferrer">Lista única</a><a className="admin-text-button" href={`/recepcao/lista?evento=${event.id}&partes=2`} target="_blank" rel="noreferrer">Dividida em 2</a></span></li>)}</ul>
     </section>
+    <ReminderEmail events={events}/>
     <section className="panel admin-overview-block"><div className="admin-block-heading"><div><h3>Acessos da recepção</h3><p>Cada recepcionista entra em <strong>/recepcao</strong> com o próprio e-mail e senha. O nome dela aparece em cada inscrição que validar.</p></div></div>
       {accounts === null ? <p className="body-copy mt-4">Carregando…</p> : accounts.length ? <ul className="admin-count-list">{accounts.map(account => <li key={account.id}><span><strong>{account.display_name || account.email}</strong> · {account.email}</span><button type="button" className="admin-text-button" disabled={busy} onClick={() => remove(account)}>Remover acesso</button></li>)}</ul> : <p className="body-copy mt-4">Nenhuma recepcionista cadastrada ainda.</p>}
       <form className="mt-6 grid gap-5 sm:grid-cols-2" onSubmit={create}>
